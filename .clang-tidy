@@ -1,0 +1,5 @@
+---
+Checks:          '-*,performance-*,llvm-*,bugprone-*,modernize-*,openmp-*,portability-*,readability-*,-modernize-use-trailing-return-type,-readability-uppercase-literal-suffix,-readability-else-after-return,-readability-magic-numbers'
+WarningsAsErrors: '*'
+HeaderFilterRegex: ''
+FormatStyle:     none
