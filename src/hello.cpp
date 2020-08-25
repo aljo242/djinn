@@ -1,3 +1,5 @@
+#include "Warnings.h"
+
 #include <stdexcept>
 #include <cstdlib>
 #include <vector>
@@ -15,6 +17,7 @@
 #include <spdlog/spdlog.h>
 
 #include "QueueFamilies.h"
+
 
 
 constexpr uint32_t WIDTH{ 800 };
@@ -244,19 +247,20 @@ private:
 	{
 		if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
 		{
-			spdlog::debug("Validation Layer: {}", pCallbackData->pMessage);
+			
+			spdlog::debug("Validation Layer {} Message: {}", messageType, pCallbackData->pMessage);
 		}
 		return VK_FALSE;
 	}
 
 	// TODO expand this
-	uint32_t rateDeviceSuitability(VkPhysicalDevice device)
+	uint32_t rateDeviceSuitability(VkPhysicalDevice dev)
 	{
 		VkPhysicalDeviceProperties deviceProperties;
-		vkGetPhysicalDeviceProperties(device, &deviceProperties);
+		vkGetPhysicalDeviceProperties(dev, &deviceProperties);
 
 		VkPhysicalDeviceFeatures deviceFeatures;
-		vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+		vkGetPhysicalDeviceFeatures(dev, &deviceFeatures);
 
 		uint32_t score			{0};
 
@@ -276,7 +280,7 @@ private:
 		}
 
 		// check the command queue capabilities of the devices
-		QueueFamilyIndices indices		{findQueueFamilies(device)};
+		QueueFamilyIndices indices		{findQueueFamilies(dev)};
 		if (!indices.graphicsFamily.has_value())
 		{
 			return 0;
@@ -300,10 +304,10 @@ private:
 
 		std::multimap<uint32_t, VkPhysicalDevice> deviceCandidates;
 
-		for (const auto& device : devices)
+		for (const auto& dev : devices)
 		{
-			uint32_t score			{rateDeviceSuitability(device)};
-			deviceCandidates.insert(std::make_pair(score, device));
+			uint32_t score			{rateDeviceSuitability(dev)};
+			deviceCandidates.insert(std::make_pair(score, dev));
 		}
 		
 		// choose the best candidate
@@ -402,13 +406,13 @@ private:
 
 private:
 	// window data
-	GLFWwindow* window;
+	GLFWwindow* window							{nullptr};
 
-	VkInstance instance;
-	VkPhysicalDevice physicalDevice {VK_NULL_HANDLE};		// physical device
-	VkDevice device;										// logical device
+	VkInstance instance							{ VK_NULL_HANDLE };
+	VkPhysicalDevice physicalDevice				{ VK_NULL_HANDLE };		// physical device
+	VkDevice device								{ VK_NULL_HANDLE };// logical device
 
-	VkDebugUtilsMessengerEXT debugMessenger;
+	VkDebugUtilsMessengerEXT debugMessenger		{ VK_NULL_HANDLE };
 };
 
 

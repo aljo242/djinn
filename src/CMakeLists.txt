@@ -1,6 +1,7 @@
 add_executable(main
 	hello.cpp
-	 "QueueFamilies.h")
+	 "QueueFamilies.h" 
+	 "Warnings.h")
 
 target_link_libraries(main PUBLIC
 		${EXTRA_LIBS}
