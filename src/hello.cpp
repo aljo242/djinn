@@ -1,6 +1,7 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <vector>
+#include <map>
 
 // caused glfw to automatically include <vulkan/vulkan.h>
 #define GLFW_INCLUDE_VULKAN
@@ -12,6 +13,8 @@
 #include <glm/mat4x4.hpp>
 
 #include <spdlog/spdlog.h>
+
+#include "QueueFamilies.h"
 
 
 constexpr uint32_t WIDTH{ 800 };
@@ -103,7 +106,7 @@ private:
 		createInfo.enabledLayerCount		= 0;
 		// validation layers + debug info
 		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-		if (enableValidationlayers)
+		if constexpr (enableValidationlayers)
 		{
 			createInfo.enabledLayerCount	= static_cast<uint32_t>(validationLayers.size());
 			createInfo.ppEnabledLayerNames	= validationLayers.data();
@@ -225,7 +228,7 @@ private:
 
 		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount); // begin and end pointers
 
-		if (enableValidationlayers)
+		if constexpr (enableValidationlayers)
 		{
 			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		}
@@ -246,6 +249,113 @@ private:
 		return VK_FALSE;
 	}
 
+	// TODO expand this
+	uint32_t rateDeviceSuitability(VkPhysicalDevice device)
+	{
+		VkPhysicalDeviceProperties deviceProperties;
+		vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+		VkPhysicalDeviceFeatures deviceFeatures;
+		vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+		uint32_t score			{0};
+
+		//  huge score boost for discrete GPUs
+		if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+		{
+			score += 1000;
+		}
+
+		// maximum possible size of textures affect graphics quality
+		score += deviceProperties.limits.maxImageDimension2D;
+
+		// don't care if we can't use geometry shaders
+		if (!deviceFeatures.geometryShader)
+		{
+			return 0;
+		}
+
+		// check the command queue capabilities of the devices
+		QueueFamilyIndices indices		{findQueueFamilies(device)};
+		if (!indices.graphicsFamily.has_value())
+		{
+			return 0;
+		}
+
+		return score;
+	}
+
+	void pickPhysicalDevice()
+	{
+		uint32_t deviceCount		{0};
+		vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+		if (deviceCount == 0)
+		{
+			throw std::runtime_error("Failed to find GPUs with Vulkan support!");
+		}
+
+		std::vector<VkPhysicalDevice> devices(deviceCount);
+		vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+		std::multimap<uint32_t, VkPhysicalDevice> deviceCandidates;
+
+		for (const auto& device : devices)
+		{
+			uint32_t score			{rateDeviceSuitability(device)};
+			deviceCandidates.insert(std::make_pair(score, device));
+		}
+		
+		// choose the best candidate
+		if (deviceCandidates.rbegin()->first > 0)
+		{
+			physicalDevice = deviceCandidates.rbegin()->second;
+		}
+		else
+		{
+			throw std::runtime_error("Failed to find a suitable GPU");
+		}
+
+	}
+
+	void createLogicalDevice()
+	{
+		QueueFamilyIndices indices		{findQueueFamilies(physicalDevice)};
+
+		VkDeviceQueueCreateInfo queueCreateInfo{};
+		queueCreateInfo.sType				= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.queueFamilyIndex	= indices.graphicsFamily.value();
+		queueCreateInfo.queueCount			= 1;
+
+		constexpr float queuePriority		{1.0f};
+		queueCreateInfo.pQueuePriorities	= &queuePriority;
+
+		VkPhysicalDeviceFeatures deviceFeatures{};
+		VkDeviceCreateInfo createInfo{};
+		createInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		createInfo.pQueueCreateInfos		= &queueCreateInfo;
+		createInfo.queueCreateInfoCount		= 1;
+		createInfo.pEnabledFeatures			= &deviceFeatures;
+		createInfo.enabledExtensionCount	= 0;
+
+		if constexpr (enableValidationlayers)
+		{
+			createInfo.enabledLayerCount	= static_cast<uint32_t>(validationLayers.size());
+			createInfo.ppEnabledLayerNames	= validationLayers.data();
+		}
+		else
+		{
+			createInfo.enabledLayerCount	= 0;
+		}
+
+		if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create logical device!");
+		}
+
+	}
+
+
 	void initWindow()
 	{
 		glfwInit();
@@ -260,6 +370,8 @@ private:
 	{
 		createInstance();
 		setupDebugMessenger();
+		pickPhysicalDevice();
+		createLogicalDevice();
 	}
 
 	
@@ -274,7 +386,9 @@ private:
 
 	void cleanup()
 	{
-		if (enableValidationlayers)
+		vkDestroyDevice(device, nullptr);
+
+		if constexpr (enableValidationlayers)
 		{
 			DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
 		}
@@ -291,6 +405,8 @@ private:
 	GLFWwindow* window;
 
 	VkInstance instance;
+	VkPhysicalDevice physicalDevice {VK_NULL_HANDLE};		// physical device
+	VkDevice device;										// logical device
 
 	VkDebugUtilsMessengerEXT debugMessenger;
 };
