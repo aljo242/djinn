@@ -35,6 +35,7 @@ function(set_project_warnings project_name)
 		/w14906					# string literal cast to 'LPWSTR'
 		/w14928					# illegal copy-initialization 
 		/permissive				# standards conformance
+		/wd26812
 		)
 
 	set(CLANG_WARNINGS

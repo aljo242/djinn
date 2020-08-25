@@ -1,20 +1,9 @@
-#include "Warnings.h"
-
 #include <stdexcept>
 #include <cstdlib>
 #include <vector>
 #include <map>
 
-// caused glfw to automatically include <vulkan/vulkan.h>
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
-
-#include <spdlog/spdlog.h>
+#include "ext_inc.h"
 
 #include "QueueFamilies.h"
 
