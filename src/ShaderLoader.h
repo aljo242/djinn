@@ -22,3 +22,4 @@ static std::vector<char> readBinaryFile(const std::string& filename)
 
 	return buffer;
 }
+
