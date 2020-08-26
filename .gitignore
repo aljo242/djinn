@@ -68,3 +68,6 @@ cmake-build-*/
 *.tcl
 *.user
 *.sln
+
+# Vulkan
+*.spv

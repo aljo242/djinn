@@ -1,7 +1,7 @@
 add_executable(main
 	hello.cpp
 	 "QueueFamilies.h" 
-	 "ext_inc.h")
+	 "ext_inc.h" "ShaderLoader.h")
 
 target_link_libraries(main PUBLIC
 		${EXTRA_LIBS}

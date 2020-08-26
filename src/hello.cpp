@@ -10,6 +10,7 @@
 
 #include "QueueFamilies.h"
 #include "SwapChainSupportDetails.h"
+#include "ShaderLoader.h"
 
 
 
@@ -563,6 +564,12 @@ private:
 		}
 	}
 
+	void createGraphicsPipeline()
+	{
+		const auto vertShaderCode		{ readBinaryFile("shader/vert.spv") };
+		const auto fragShaderCode		{ readBinaryFile("shader/frag.spv") };
+
+	}
 
 	void initWindow()
 	{
@@ -584,6 +591,7 @@ private:
 		createSwapChain();
 		createSwapChainImages();
 		createImageViews();
+		createGraphicsPipeline();
 	}
 
 	void mainLoop()

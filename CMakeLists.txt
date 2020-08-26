@@ -108,6 +108,16 @@ run_conan()
 
 add_subdirectory(src)
 
+
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/shader)
+
+# step for copying shader binaries to output dir
+file(COPY 
+	${CMAKE_CURRENT_SOURCE_DIR}/shader/bin/
+	DESTINATION
+	${CMAKE_BINARY_DIR}/bin/shader/
+)
+
 ####################################################################################
 
 
