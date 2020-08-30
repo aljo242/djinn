@@ -1,7 +1,13 @@
 add_executable(main
 	hello.cpp
 	 "QueueFamilies.h" 
-	 "ext_inc.h" "ShaderLoader.h")
+	 "ext_inc.h" 
+	 "ShaderLoader.h" 
+	 "hello.h" "gfxDebug.h" 
+	 "ChooseCapabilities.h" 
+	 "gfxDebug.cpp" 
+	 "ChooseCapabilities.cpp" 
+	 "main.cpp" "QueueFamilies.cpp" "SwapChainSupportDetails.cpp")
 
 target_link_libraries(main PUBLIC
 		${EXTRA_LIBS}

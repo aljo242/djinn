@@ -1,3 +1,6 @@
+#ifndef SHADER_LOADER_H
+#define SHADER_LOADER_H
+
 #include <fstream>
 
 static std::vector<char> readBinaryFile(const std::string& filename)
@@ -23,3 +26,4 @@ static std::vector<char> readBinaryFile(const std::string& filename)
 	return buffer;
 }
 
+#endif
