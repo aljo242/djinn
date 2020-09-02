@@ -3,13 +3,87 @@
 #include "ChooseCapabilities.h"
 
 
-void HelloTriangleApp::run()
+HelloTriangleApp::HelloTriangleApp()
 {
 	initWindow();
 	initVulkan();
+}
+
+void HelloTriangleApp::run()
+{
 	mainLoop();
 	cleanup();
 }
+
+
+void HelloTriangleApp::initWindow()
+{
+	glfwInit();
+
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan Window", nullptr, nullptr);
+
+	// use this to get access private members in the resize callback fxn
+	glfwSetWindowUserPointer(window, this);
+	glfwSetFramebufferSizeCallback(window, framebufferResizedCallback);
+}
+
+
+void HelloTriangleApp::initVulkan()
+{
+	createInstance();			//
+	setupDebugMessenger();		//
+	createSurface();			//
+	pickPhysicalDevice();		//
+	createLogicalDevice();		//
+	createSwapChain();			//
+	createImageViews();			//
+	createRenderPass();			//
+	createGraphicsPipeline();	//
+	createFramebuffers();		//
+	createCommandPool();		//
+	createCommandBuffers();		//
+	createSyncObjects();		//
+}
+
+void HelloTriangleApp::mainLoop()
+{
+	while (!glfwWindowShouldClose(window))
+	{
+		glfwPollEvents();
+		drawFrame();
+	}
+}
+
+void HelloTriangleApp::cleanup()
+{
+	// wait for the device to not be "mid-work" before we destroy objects
+	vkDeviceWaitIdle(device);
+
+	cleanupSwapChain();
+
+	// destroy sync objects
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+	{
+		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+		vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+		vkDestroyFence(device, inFlightFences[i], nullptr);
+	}
+
+	vkDestroyCommandPool(device, commandPool, nullptr);
+	vkDestroyDevice(device, nullptr);
+
+	if constexpr (enableValidationlayers)
+	{
+		DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+	}
+
+	vkDestroySurfaceKHR(instance, surface, nullptr);
+	vkDestroyInstance(instance, nullptr);
+	glfwDestroyWindow(window);
+	glfwTerminate();
+}
+
 
 void HelloTriangleApp::createInstance()
 {
@@ -25,7 +99,21 @@ void HelloTriangleApp::createInstance()
 	appInfo.applicationVersion  = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.pEngineName         = "Djinn";
 	appInfo.engineVersion       = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.apiVersion			= VK_API_VERSION_1_2;
+
+	// check for the correct API version
+	// Djinn currently will only support Vulkan spec 1.1 and higher
+	if (vkGetInstanceProcAddr(NULL, "vkEnumerateInstanceVersion") == NULL)
+	{
+		throw std::runtime_error("Device only supports Vulkan 1.0.  Djinn currently supports Vulkan 1.1 and 1.2");
+	}
+
+	uint32_t vulkanVersion{ 0 };
+	vkEnumerateInstanceVersion(&vulkanVersion);
+	if (vulkanVersion < VK_API_VERSION_1_1)
+	{
+		throw std::runtime_error("Device only supports Vulkan 1.0.  Djinn currently supports Vulkan 1.1 and 1.2");
+	}
+	appInfo.apiVersion = vulkanVersion;
 
 #if defined(_DEBUG)
 	glfwExtensionCheck();
@@ -33,24 +121,20 @@ void HelloTriangleApp::createInstance()
 #endif
 
 	uint32_t glfwExtensionCount	  {0};
-	const char** glfwExtensions;
+	const char** glfwExtensions{ glfwGetRequiredInstanceExtensions(&glfwExtensionCount) };
 
-	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-	//
 	VkInstanceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	createInfo.pApplicationInfo			= &appInfo;
 	createInfo.enabledExtensionCount	= glfwExtensionCount;
 	createInfo.ppEnabledExtensionNames	= glfwExtensions;
-	createInfo.enabledLayerCount		= 0;
+
 	// validation layers + debug info
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
 	if constexpr (enableValidationlayers)
 	{
 		createInfo.enabledLayerCount	= static_cast<uint32_t>(validationLayers.size());
 		createInfo.ppEnabledLayerNames	= validationLayers.data();
-
 		populateDebugMessengerCreateInfo(debugCreateInfo);
 		createInfo.pNext				= (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 	}
@@ -134,6 +218,7 @@ void HelloTriangleApp::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCre
 	createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
 		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
 		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
@@ -175,57 +260,59 @@ std::vector<const char*> HelloTriangleApp::getRequiredExtensions()
 }
 
 // TODO expand this
-uint32_t HelloTriangleApp::rateDeviceSuitability(VkPhysicalDevice dev)
+uint32_t HelloTriangleApp::rateDeviceSuitability(VkPhysicalDevice physicalDev)
 {
 	VkPhysicalDeviceProperties deviceProperties;
-	vkGetPhysicalDeviceProperties(dev, &deviceProperties);
+	vkGetPhysicalDeviceProperties(physicalDev, &deviceProperties);
 
 	VkPhysicalDeviceFeatures deviceFeatures;
-	vkGetPhysicalDeviceFeatures(dev, &deviceFeatures);
+	vkGetPhysicalDeviceFeatures(physicalDev, &deviceFeatures);
 
 	uint32_t score					{0};
 
 	//  huge score boost for discrete GPUs
-	if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+	if (deviceProperties.deviceType != VK_PHYSICAL_DEVICE_TYPE_OTHER)
 	{
-		score += 1000;
+		score += 1000 * (4 - deviceProperties.deviceType);
+	}
+
+	// prefer device with 1.2 over 1.1
+	if (deviceProperties.apiVersion >= VK_API_VERSION_1_2)
+	{
+		score += 500;
 	}
 
 	// maximum possible size of textures affect graphics quality
 	score += deviceProperties.limits.maxImageDimension2D;
 
 	// don't care if we can't use geometry shaders
+	// https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkPhysicalDeviceFeatures.html
+	// if engine requires any of these features, may be required like shown 
+	// below with geometry shader requirements
 	if (!deviceFeatures.geometryShader)
 	{
 		return 0;
 	}
 
-	bool extensionsSupported		{checkDeviceExtensionSupport(dev)};
-
-	if (!extensionsSupported)
+	if (!checkDeviceExtensionSupport(physicalDev))
 	{
 		return 0;
 	}
 
-	// check the command queue capabilities of the devices
-	QueueFamilyIndices indices		{findQueueFamilies(dev, surface)};
+	// check if we support graphics queues and presentation
+	QueueFamilyIndices indices					{findQueueFamilies(physicalDev, surface, VK_QUEUE_GRAPHICS_BIT)};
 	if (!indices.isComplete())
 	{
 		return 0;
 	}
+	
+	SwapChainSupportDetails swapChainSupport	{querySwapChainSupport(physicalDev,	surface)};
+	// if we support formats AND present modes, swapchain support is "adequate"
+	bool swapChainAdequate{ !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty() };
 
-	bool swapChainAdequate{ false };
-	// conditional will always be satisfied due to return statement "if (!extensionsSupported) {return 0;}"
-	if (extensionsSupported)
+	if (!swapChainAdequate)
 	{
-		SwapChainSupportDetails swapChainSupport	{querySwapChainSupport(dev,	surface)};
-		// if we support formats AND present modes, swapchain support is "adequate"
-		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
-
-		if (!swapChainAdequate)
-		{
-			return 0;
-		}
+		return 0;
 	}
 
 	return score;
@@ -233,20 +320,22 @@ uint32_t HelloTriangleApp::rateDeviceSuitability(VkPhysicalDevice dev)
 
 void HelloTriangleApp::createSurface()
 {
+	// exposing vulkan functions of glfw, so window creation becomes simplified
 	if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create window surface!");
 	}
 }
 
-bool HelloTriangleApp::checkDeviceExtensionSupport(VkPhysicalDevice dev)
+// build up a set up of required extensions
+// check if required extensions is a subset of available extensions
+// report if true or false
+bool HelloTriangleApp::checkDeviceExtensionSupport(VkPhysicalDevice physicalDev)
 {
-	// TODO
 	uint32_t extensionCount		{0};
-	vkEnumerateDeviceExtensionProperties(dev, nullptr, &extensionCount, nullptr);
-
+	vkEnumerateDeviceExtensionProperties(physicalDev, nullptr, &extensionCount, nullptr);
 	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-	vkEnumerateDeviceExtensionProperties(dev, nullptr, &extensionCount, availableExtensions.data());
+	vkEnumerateDeviceExtensionProperties(physicalDev, nullptr, &extensionCount, availableExtensions.data());
 
 	std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
@@ -262,24 +351,26 @@ void HelloTriangleApp::pickPhysicalDevice()
 {
 	uint32_t deviceCount		{0};
 	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-
 	if (deviceCount == 0)
 	{
 		throw std::runtime_error("Failed to find GPUs with Vulkan support!");
 	}
+	std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
+	vkEnumeratePhysicalDevices(instance, &deviceCount, physicalDevices.data());
 
-	std::vector<VkPhysicalDevice> devices(deviceCount);
-	vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
-
+	// <score, device number>
 	std::multimap<uint32_t, VkPhysicalDevice> deviceCandidates;
 
-	for (const auto& dev : devices)
+	for (const auto& dev : physicalDevices)
 	{
 		uint32_t score			{rateDeviceSuitability(dev)};
 		deviceCandidates.insert(std::make_pair(score, dev));
 	}
 		
 	// choose the best candidate
+	// rbegin will choose the highest score
+	// reject if there are none greater than 0 as rateDeviceSuitability 
+	// only returns 0 if the device is NOT suitable
 	if (deviceCandidates.rbegin()->first > 0)
 	{
 		physicalDevice = deviceCandidates.rbegin()->second;
@@ -293,7 +384,7 @@ void HelloTriangleApp::pickPhysicalDevice()
 
 void HelloTriangleApp::createLogicalDevice()
 {
-	QueueFamilyIndices indices		{findQueueFamilies(physicalDevice, surface)};
+	QueueFamilyIndices indices		{findQueueFamilies(physicalDevice, surface, VK_QUEUE_GRAPHICS_BIT)};
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32_t> uniqueQueueFamilies {indices.graphicsFamily.value(), indices.presentFamily.value()};
@@ -366,11 +457,11 @@ void HelloTriangleApp::createSwapChain()
 {
 	SwapChainSupportDetails swapChainSupport	{querySwapChainSupport(physicalDevice, surface)};
 
-	VkSurfaceFormatKHR surfaceFormat	{chooseSwapChainFormat(swapChainSupport.formats)};
-	VkPresentModeKHR presentMode		{chooseSwapChainPresentMode(swapChainSupport.presentModes)};
-	VkExtent2D extent					{chooseSwapChainExtent(swapChainSupport.capabilities)};
+	VkSurfaceFormatKHR surfaceFormat			{chooseSwapChainFormat(swapChainSupport.formats)};
+	VkPresentModeKHR presentMode				{chooseSwapChainPresentMode(swapChainSupport.presentModes)};
+	VkExtent2D extent							{chooseSwapChainExtent(swapChainSupport.capabilities)};
 
-	uint32_t imageCount			{swapChainSupport.capabilities.minImageCount + 1};
+	uint32_t imageCount							{swapChainSupport.capabilities.minImageCount + 1};
 
 	// if maxImageCount == 0, there is no maximum number of images
 	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
@@ -390,7 +481,7 @@ void HelloTriangleApp::createSwapChain()
 	// use VK_IMAGE_USAGE_TRANSFER_DST_BIT if post-processing steps desired
 
 	// TODO REVISIT imageSharingMode 
-	QueueFamilyIndices indices			{findQueueFamilies(physicalDevice, surface)};
+	QueueFamilyIndices indices			{findQueueFamilies(physicalDevice, surface, VK_QUEUE_GRAPHICS_BIT)};
 	uint32_t queueFamilyIndices[]		{indices.graphicsFamily.value(), indices.presentFamily.value()};
 
 	if (indices.graphicsFamily != indices.presentFamily)
@@ -741,7 +832,7 @@ void HelloTriangleApp::createFramebuffers()
 
 void HelloTriangleApp::createCommandPool()
 {
-	QueueFamilyIndices queueFamilyIndices				{findQueueFamilies(physicalDevice, surface)};
+	QueueFamilyIndices queueFamilyIndices				{findQueueFamilies(physicalDevice, surface, VK_QUEUE_GRAPHICS_BIT)};
 
 	VkCommandPoolCreateInfo poolCreateInfo{};
 	poolCreateInfo.sType								= VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -902,69 +993,7 @@ void HelloTriangleApp::drawFrame()
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;		
 }
 
-void HelloTriangleApp:: initWindow()
-{
-	glfwInit();
 
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	// TODO handle this and allow for resizable backbuffers
-	window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan Window", nullptr, nullptr);
-	glfwSetWindowUserPointer(window, this);
-	glfwSetFramebufferSizeCallback(window, framebufferResizedCallback);
-}
 
-void HelloTriangleApp::initVulkan()
-{
-	createInstance();
-	setupDebugMessenger();
-	createSurface();
-	pickPhysicalDevice();
-	createLogicalDevice();
-	createSwapChain();
-	createImageViews();
-	createRenderPass();
-	createGraphicsPipeline();
-	createFramebuffers();
-	createCommandPool();
-	createCommandBuffers();
-	createSyncObjects();
-}
-
-void HelloTriangleApp::mainLoop()
-{
-	while(!glfwWindowShouldClose(window))
-	{
-		glfwPollEvents();
-		drawFrame();
-	}
-
-	vkDeviceWaitIdle(device);
-}
-
-void HelloTriangleApp::cleanup()
-{ 
-	cleanupSwapChain();
-
-	// destroy sync objects
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-	{
-		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
-		vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-		vkDestroyFence(device, inFlightFences[i], nullptr);
-	}
-
-	vkDestroyCommandPool(device, commandPool, nullptr);
-	vkDestroyDevice(device, nullptr);
-
-	if constexpr (enableValidationlayers)
-	{
-		DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
-	}
-
-	vkDestroySurfaceKHR(instance, surface, nullptr);
-	vkDestroyInstance(instance, nullptr);
-	glfwDestroyWindow(window);
-	glfwTerminate();
-}
 
 

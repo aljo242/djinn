@@ -7,7 +7,7 @@ bool QueueFamilyIndices::isComplete()
 }
 
 
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, VkQueueFlagBits flag)
 {
 	QueueFamilyIndices indices;
 
@@ -20,17 +20,18 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
 	uint32_t i{ 0 };
 	for (const auto& queueFamily : queueFamilies)
 	{
-		VkBool32 presentSupport{ 0 };
+		VkBool32 presentSupport{ VK_FALSE };
 		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
 
 		if (presentSupport)
 		{
-			indices.presentFamily = i;
+			indices.presentFamily.emplace(i);
 		}
 
-		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+		// mark if the queue matches the requested tpe
+		if (queueFamily.queueFlags & flag)
 		{
-			indices.graphicsFamily = i;
+			indices.graphicsFamily.emplace(i);
 		}
 
 		if (indices.isComplete())

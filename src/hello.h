@@ -35,9 +35,15 @@ constexpr bool enableValidationlayers{ false };
 class HelloTriangleApp
 {
 public:
+	HelloTriangleApp();
 	void run();
 
 private:
+	void initWindow();
+	void initVulkan();
+	void mainLoop();
+	void cleanup();
+
 	void createInstance();
 	bool checkValidationLayerSupport();
 	void glfwExtensionCheck();
@@ -46,9 +52,9 @@ private:
 	void setupDebugMessenger();
 	std::vector<const char*> getRequiredExtensions();
 	// TODO expand this
-	uint32_t rateDeviceSuitability(VkPhysicalDevice dev);
+	uint32_t rateDeviceSuitability(VkPhysicalDevice physicalDev);
 	void createSurface();
-	bool checkDeviceExtensionSupport(VkPhysicalDevice dev);
+	bool checkDeviceExtensionSupport(VkPhysicalDevice physicalDev);
 	void pickPhysicalDevice();
 	void createLogicalDevice();
 	// Swap Chain Extent is the resolution of the swap chain buffer image
@@ -67,11 +73,7 @@ private:
 	void createSyncObjects();
 	void drawFrame();
 
-	void initWindow();
-	void initVulkan();
-	void mainLoop();
-	void cleanup();
-
+	// matches signature from vulkan api
 	static VKAPI_ATTR VkBool32 VKAPI_CALL HelloTriangleApp::debugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagBitsEXT messageType,

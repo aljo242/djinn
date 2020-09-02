@@ -108,6 +108,8 @@ run_conan()
 
 add_subdirectory(src)
 
+# TODO 
+# add step where shaders are compiled and put into the ./shader/bin dir
 
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/shader)
 

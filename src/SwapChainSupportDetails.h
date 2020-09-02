@@ -13,5 +13,5 @@ struct SwapChainSupportDetails
 };
 
 // use Physical Device and Surface to query support for swapchains
-SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice dev, VkSurfaceKHR surface);
+SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice physicalDev, VkSurfaceKHR surface);
 #endif
