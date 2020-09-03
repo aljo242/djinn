@@ -11,11 +11,9 @@
 #include <algorithm>
 
 #include "ext_inc.h"
-
 #include "QueueFamilies.h"
 #include "SwapChainSupportDetails.h"
 #include "ShaderLoader.h"
-
 
 constexpr uint32_t WIDTH{ 800 };
 constexpr uint32_t HEIGHT{ 600 };
@@ -56,9 +54,9 @@ private:
 	void createSurface();
 	bool checkDeviceExtensionSupport(VkPhysicalDevice physicalDev);
 	void pickPhysicalDevice();
+	VkPhysicalDeviceFeatures  populateDeviceFeatures();
 	void createLogicalDevice();
 	// Swap Chain Extent is the resolution of the swap chain buffer image
-	VkExtent2D chooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 	void createSwapChain();
 	void cleanupSwapChain();
 	void recreateSwapChain();

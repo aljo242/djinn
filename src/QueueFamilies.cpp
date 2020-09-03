@@ -28,7 +28,7 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
 			indices.presentFamily.emplace(i);
 		}
 
-		// mark if the queue matches the requested tpe
+		// mark if the queue matches the requested type
 		if (queueFamily.queueFlags & flag)
 		{
 			indices.graphicsFamily.emplace(i);

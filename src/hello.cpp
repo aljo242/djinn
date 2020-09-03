@@ -1,7 +1,5 @@
 #include "hello.h"
 #include "gfxDebug.h"
-#include "ChooseCapabilities.h"
-
 
 HelloTriangleApp::HelloTriangleApp()
 {
@@ -305,11 +303,16 @@ uint32_t HelloTriangleApp::rateDeviceSuitability(VkPhysicalDevice physicalDev)
 	{
 		return 0;
 	}
+
+	// prefer to do graphics and presentation on the same device
+	if (indices.graphicsFamily.value() == indices.presentFamily.value())
+	{
+		score += 1000;
+	}
 	
 	SwapChainSupportDetails swapChainSupport	{querySwapChainSupport(physicalDev,	surface)};
 	// if we support formats AND present modes, swapchain support is "adequate"
 	bool swapChainAdequate{ !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty() };
-
 	if (!swapChainAdequate)
 	{
 		return 0;
@@ -379,44 +382,60 @@ void HelloTriangleApp::pickPhysicalDevice()
 	{
 		throw std::runtime_error("Failed to find a suitable GPU");
 	}
+}
 
+VkPhysicalDeviceFeatures HelloTriangleApp::populateDeviceFeatures()
+{
+	VkPhysicalDeviceFeatures deviceFeatures{};
+
+	// TODO 
+	// add all needed features
+	deviceFeatures.geometryShader = VK_TRUE;
+
+	return deviceFeatures;
 }
 
 void HelloTriangleApp::createLogicalDevice()
 {
 	QueueFamilyIndices indices		{findQueueFamilies(physicalDevice, surface, VK_QUEUE_GRAPHICS_BIT)};
 
-	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+	// if both queues have the same indices
 	std::set<uint32_t> uniqueQueueFamilies {indices.graphicsFamily.value(), indices.presentFamily.value()};
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos(uniqueQueueFamilies.size());
 
 	float queuePriority{ 1.0f };
+	size_t i{ 0 };
 	for (const auto& queueFamily : uniqueQueueFamilies)
 	{
 		VkDeviceQueueCreateInfo queueCreateInfo{};
-		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfo.queueFamilyIndex = queueFamily;
-		queueCreateInfo.queueCount = 1;
-		queueCreateInfo.pQueuePriorities = &queuePriority;
-		queueCreateInfos.push_back(queueCreateInfo);
+		queueCreateInfo.sType				= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.queueFamilyIndex	= queueFamily;
+		queueCreateInfo.queueCount			= 1;
+		queueCreateInfo.pQueuePriorities	= &queuePriority;
+		queueCreateInfos[i]					= queueCreateInfo;
+		++i;
 	}
 
-	VkPhysicalDeviceFeatures deviceFeatures{};
+	VkPhysicalDeviceFeatures deviceFeatures{ populateDeviceFeatures() };
 	VkDeviceCreateInfo createInfo{};
-	createInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	createInfo.pQueueCreateInfos		= queueCreateInfos.data();
-	createInfo.queueCreateInfoCount		= static_cast<uint32_t>(queueCreateInfos.size());;
-	createInfo.pEnabledFeatures			= &deviceFeatures;
-	createInfo.enabledExtensionCount	= static_cast<uint32_t>(deviceExtensions.size());
-	createInfo.ppEnabledExtensionNames  = deviceExtensions.data();
+	createInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	createInfo.pQueueCreateInfos			= queueCreateInfos.data();
+	createInfo.queueCreateInfoCount			= static_cast<uint32_t>(queueCreateInfos.size());;
+	createInfo.pEnabledFeatures				= &deviceFeatures;
+	createInfo.enabledExtensionCount		= static_cast<uint32_t>(deviceExtensions.size());
+	createInfo.ppEnabledExtensionNames		= deviceExtensions.data(); 
 
+
+	// DEPRECATED
+	// consider removing
 	if constexpr (enableValidationlayers)
 	{
-		createInfo.enabledLayerCount	= static_cast<uint32_t>(validationLayers.size());
-		createInfo.ppEnabledLayerNames	= validationLayers.data();
+		createInfo.enabledLayerCount		= static_cast<uint32_t>(validationLayers.size());
+		createInfo.ppEnabledLayerNames		= validationLayers.data();
 	}
 	else
 	{
-		createInfo.enabledLayerCount	= 0;
+		createInfo.enabledLayerCount		= 0;
 	}
 
 	if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS)
@@ -424,42 +443,21 @@ void HelloTriangleApp::createLogicalDevice()
 		throw std::runtime_error("Failed to create logical device!");
 	}
 		
+	// use created Logical Device to fill VkQueue objects with their proper interfaces
+	// queues are automatically created with the Logical Device, which makes sense
+	// since we device creation info includes queue creation info
+	// all we need to do is GET them
 	vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
 	vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
-}
 
-
-// Swap Chain Extent is the resolution of the swap chain buffer image
-VkExtent2D HelloTriangleApp::chooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities)
-{
-	if (capabilities.currentExtent.width != UINT32_MAX)
-	{
-		return capabilities.currentExtent;
-	}
-	else
-	{
-		int width{ 0 };
-		int height{ 0 };
-
-		glfwGetFramebufferSize(window, &width, &height);
-		VkExtent2D actualExtent{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-
-		actualExtent.width = std::max(capabilities.minImageExtent.width,
-			std::min(capabilities.maxImageExtent.width, actualExtent.width));
-			actualExtent.height = std::max(capabilities.minImageExtent.height,
-			std::min(capabilities.maxImageExtent.height, actualExtent.height));
-
-		return actualExtent;
-	}	
 }
 
 void HelloTriangleApp::createSwapChain()
 {
 	SwapChainSupportDetails swapChainSupport	{querySwapChainSupport(physicalDevice, surface)};
-
 	VkSurfaceFormatKHR surfaceFormat			{chooseSwapChainFormat(swapChainSupport.formats)};
 	VkPresentModeKHR presentMode				{chooseSwapChainPresentMode(swapChainSupport.presentModes)};
-	VkExtent2D extent							{chooseSwapChainExtent(swapChainSupport.capabilities)};
+	VkExtent2D extent							{chooseSwapChainExtent(swapChainSupport.capabilities, window)};
 
 	uint32_t imageCount							{swapChainSupport.capabilities.minImageCount + 1};
 
