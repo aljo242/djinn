@@ -62,7 +62,8 @@ VkPresentModeKHR chooseSwapChainPresentMode(const std::vector<VkPresentModeKHR> 
 		}
 	}
 
-	// default return
+	// default return 
+	// guaranteed to be present
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
@@ -77,9 +78,11 @@ VkExtent2D chooseSwapChainExtent(const VkSurfaceCapabilitiesKHR& capabilities, G
 		int width{ 0 };
 		int height{ 0 };
 
+		// get the glfw window size and cast to VkExtent object
 		glfwGetFramebufferSize(window, &width, &height);
 		VkExtent2D actualExtent{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 
+		// clamp within [capabilities.minextent, capabilities.maxextent]
 		actualExtent.width = std::max(capabilities.minImageExtent.width,
 			std::min(capabilities.maxImageExtent.width, actualExtent.width));
 		actualExtent.height = std::max(capabilities.minImageExtent.height,

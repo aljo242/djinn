@@ -482,7 +482,7 @@ void HelloTriangleApp::createSwapChain()
 	QueueFamilyIndices indices			{findQueueFamilies(physicalDevice, surface, VK_QUEUE_GRAPHICS_BIT)};
 	uint32_t queueFamilyIndices[]		{indices.graphicsFamily.value(), indices.presentFamily.value()};
 
-	if (indices.graphicsFamily != indices.presentFamily)
+	if (!indices.sameIndices())
 	{
 		createInfo.imageSharingMode			= VK_SHARING_MODE_CONCURRENT;
 		createInfo.queueFamilyIndexCount	= 2;
@@ -495,8 +495,8 @@ void HelloTriangleApp::createSwapChain()
 		createInfo.pQueueFamilyIndices		= nullptr;
 	}
 
-	createInfo.preTransform					= swapChainSupport.capabilities.currentTransform;
-	createInfo.compositeAlpha				= VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;	// currently ignoring alpha channel
+	createInfo.preTransform					= swapChainSupport.capabilities.currentTransform; // if choose current transform, do nothing
+	createInfo.compositeAlpha				= VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;	// currently ignoring alpha channel - don't want to blend with other windows
 	createInfo.presentMode					= presentMode;
 	createInfo.clipped						= VK_TRUE; // ignored obscured for performance benefit
 	createInfo.oldSwapchain					= VK_NULL_HANDLE;
@@ -508,6 +508,7 @@ void HelloTriangleApp::createSwapChain()
 
 	createSwapChainImages();
 
+	// save these objects for later use when re-creating swapchains
 	swapChainImageFormat					= surfaceFormat.format;
 	swapChainExtent							= extent;
 }

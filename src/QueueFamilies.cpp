@@ -6,6 +6,17 @@ bool QueueFamilyIndices::isComplete()
 	return graphicsFamily.has_value() && presentFamily.has_value();
 }
 
+bool QueueFamilyIndices::sameIndices()
+{
+	if (this->isComplete())
+	{
+		return graphicsFamily.value() == presentFamily.value();
+	}
+
+	return false;
+}
+
+
 
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, VkQueueFlagBits flag)
 {

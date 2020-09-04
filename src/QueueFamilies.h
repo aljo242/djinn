@@ -10,6 +10,7 @@ struct QueueFamilyIndices
 	std::optional<uint32_t> presentFamily{ std::nullopt };
 
 	bool isComplete();
+	bool sameIndices();
 };
 
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, VkQueueFlagBits flag);
