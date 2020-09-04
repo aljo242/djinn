@@ -567,8 +567,9 @@ void HelloTriangleApp::createSwapChainImages()
 
 void HelloTriangleApp::createImageViews()
 {
-	swapChainImageViews.resize(swapChainImages.size());
-	for (size_t i = 0; i < swapChainImages.size(); ++i)
+	const auto swapChainImageSize	{swapChainImages.size()};
+	swapChainImageViews.resize(swapChainImageSize);
+	for (size_t i = 0; i < swapChainImageSize; ++i)
 	{
 		VkImageViewCreateInfo createInfo{};
 		createInfo.sType			= VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -654,25 +655,21 @@ void HelloTriangleApp::createRenderPass()
 	}
 }
 
-
 void HelloTriangleApp::createGraphicsPipeline()
 {
-	const auto vertShaderCode		{ readBinaryFile("shader/vert.spv") };
-	const auto fragShaderCode		{ readBinaryFile("shader/frag.spv") };
-
-	VkShaderModule vertShaderModule {createShaderModule(vertShaderCode)};
-	VkShaderModule fragShaderModule {createShaderModule(fragShaderCode)};
+	ShaderLoader vertShader("shader/vert.spv", device);
+	ShaderLoader fragShader("shader/frag.spv", device);
 
 	VkPipelineShaderStageCreateInfo vertShaderStageCreateInfo{};
 	vertShaderStageCreateInfo.sType			= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	vertShaderStageCreateInfo.stage			= VK_SHADER_STAGE_VERTEX_BIT;
-	vertShaderStageCreateInfo.module		= vertShaderModule;
+	vertShaderStageCreateInfo.module		= vertShader.shaderModule;
 	vertShaderStageCreateInfo.pName			= "main";
 
 	VkPipelineShaderStageCreateInfo fragShaderStageCreateInfo{};
 	fragShaderStageCreateInfo.sType			= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	fragShaderStageCreateInfo.stage			= VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragShaderStageCreateInfo.module		= fragShaderModule;
+	fragShaderStageCreateInfo.module		= fragShader.shaderModule;
 	fragShaderStageCreateInfo.pName			= "main";
 
 	VkPipelineShaderStageCreateInfo shaderStages[]	{vertShaderStageCreateInfo, fragShaderStageCreateInfo};
@@ -800,9 +797,6 @@ void HelloTriangleApp::createGraphicsPipeline()
 	{
 		throw std::runtime_error("Failed to create graphics pipeline!");
 	}
-
-	vkDestroyShaderModule(device, vertShaderModule, nullptr);
-	vkDestroyShaderModule(device, fragShaderModule, nullptr);
 }
 
 void HelloTriangleApp::createFramebuffers()

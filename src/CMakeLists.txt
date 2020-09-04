@@ -3,6 +3,7 @@ add_executable(main
 	 "QueueFamilies.h" 
 	 "ext_inc.h" 
 	 "ShaderLoader.h" 
+	 "ShaderLoader.cpp"
 	 "hello.h" "gfxDebug.h" 
 	  
 	 "gfxDebug.cpp" 
