@@ -9,9 +9,12 @@
 class ShaderLoader
 {
 public:
-	ShaderLoader(const std::string& filename, VkDevice device);
+	ShaderLoader(const std::string& filename, VkDevice device, const char* name = "main");
 	~ShaderLoader();
+
 	VkShaderModule shaderModule{VK_NULL_HANDLE};
+	const char* pName;
+
 private:
 	std::vector<char> code;
 	VkDevice m_device;

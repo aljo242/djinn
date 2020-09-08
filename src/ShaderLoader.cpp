@@ -1,8 +1,9 @@
 #include "ShaderLoader.h"
 
-ShaderLoader::ShaderLoader(const std::string& filename, VkDevice device)
+ShaderLoader::ShaderLoader(const std::string& filename, VkDevice device, const char* name)
 	:
-	m_device(device)
+	m_device(device),
+	pName(name)
 {
 	code = readBinaryFile(filename);
 

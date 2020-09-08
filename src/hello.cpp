@@ -390,7 +390,13 @@ VkPhysicalDeviceFeatures HelloTriangleApp::populateDeviceFeatures()
 
 	// TODO 
 	// add all needed features
-	deviceFeatures.geometryShader = VK_TRUE;
+	deviceFeatures.geometryShader			= VK_TRUE;
+	deviceFeatures.wideLines				= VK_TRUE;
+
+	// multi sampling features
+	deviceFeatures.variableMultisampleRate	= VK_TRUE;
+	deviceFeatures.alphaToOne				= VK_TRUE;
+	deviceFeatures.sampleRateShading		= VK_TRUE;
 
 	return deviceFeatures;
 }
@@ -515,9 +521,9 @@ void HelloTriangleApp::createSwapChain()
 
 void HelloTriangleApp::cleanupSwapChain()
 {
-	for (size_t i = 0; i < swapChainFramebuffers.size(); ++i)
+	for (auto framebuffer : swapChainFramebuffers)
 	{
-		vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
+		vkDestroyFramebuffer(device, framebuffer, nullptr);
 	}
 
 	vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
@@ -525,9 +531,9 @@ void HelloTriangleApp::cleanupSwapChain()
 	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 	vkDestroyRenderPass(device, renderPass, nullptr);
 
-	for (size_t i = 0; i < swapChainImageViews.size(); ++i)
+	for (auto imageView : swapChainImageViews)
 	{
-		vkDestroyImageView(device, swapChainImageViews[i], nullptr);
+		vkDestroyImageView(device, imageView, nullptr);
 	}
 
 	vkDestroySwapchainKHR(device, swapChain, nullptr);
@@ -565,6 +571,9 @@ void HelloTriangleApp::createSwapChainImages()
 	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
 }
 
+//	vkFrameBuffer wraps 
+//	vkImageView wraps
+//	vkImage
 void HelloTriangleApp::createImageViews()
 {
 	const auto swapChainImageSize	{swapChainImages.size()};
@@ -595,24 +604,9 @@ void HelloTriangleApp::createImageViews()
 	}
 }
 
-VkShaderModule HelloTriangleApp::createShaderModule(const std::vector<char>& code)
-{
-	VkShaderModuleCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	createInfo.codeSize = code.size();
-	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-	VkShaderModule shaderModule;
-	if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create shader module");
-	}
-
-	return shaderModule;	
-}
-
 void HelloTriangleApp::createRenderPass()
 {
+	// create attachment
 	VkAttachmentDescription colorAttachment{};
 	colorAttachment.format					= swapChainImageFormat;
 	colorAttachment.samples					= VK_SAMPLE_COUNT_1_BIT;
@@ -623,6 +617,8 @@ void HelloTriangleApp::createRenderPass()
 	colorAttachment.initialLayout			= VK_IMAGE_LAYOUT_UNDEFINED;
 	colorAttachment.finalLayout				= VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+	// ref to attachment describes it in a "higher order" way
+	// provides uint32_t index
 	VkAttachmentReference colorAttachmentRef{};
 	colorAttachmentRef.attachment			= 0;
 	colorAttachmentRef.layout				= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -661,26 +657,28 @@ void HelloTriangleApp::createGraphicsPipeline()
 	ShaderLoader fragShader("shader/frag.spv", device);
 
 	VkPipelineShaderStageCreateInfo vertShaderStageCreateInfo{};
-	vertShaderStageCreateInfo.sType			= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	vertShaderStageCreateInfo.stage			= VK_SHADER_STAGE_VERTEX_BIT;
-	vertShaderStageCreateInfo.module		= vertShader.shaderModule;
-	vertShaderStageCreateInfo.pName			= "main";
+	vertShaderStageCreateInfo.sType						= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vertShaderStageCreateInfo.stage						= VK_SHADER_STAGE_VERTEX_BIT;
+	vertShaderStageCreateInfo.module					= vertShader.shaderModule;
+	vertShaderStageCreateInfo.pName						= vertShader.pName;
 
 	VkPipelineShaderStageCreateInfo fragShaderStageCreateInfo{};
-	fragShaderStageCreateInfo.sType			= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	fragShaderStageCreateInfo.stage			= VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragShaderStageCreateInfo.module		= fragShader.shaderModule;
-	fragShaderStageCreateInfo.pName			= "main";
+	fragShaderStageCreateInfo.sType						= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	fragShaderStageCreateInfo.stage						= VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragShaderStageCreateInfo.module					= fragShader.shaderModule;
+	fragShaderStageCreateInfo.pName						= fragShader.pName;
 
 	VkPipelineShaderStageCreateInfo shaderStages[]	{vertShaderStageCreateInfo, fragShaderStageCreateInfo};
 
+	// currently have vertex info embedded into the vertex shader bytecode
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
-	vertexInputCreateInfo.sType				= VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputCreateInfo.sType							= VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputCreateInfo.pVertexBindingDescriptions = nullptr;
+	vertexInputCreateInfo.pVertexBindingDescriptions	= nullptr;
 	vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputCreateInfo.pVertexAttributeDescriptions = nullptr;
+	vertexInputCreateInfo.pVertexAttributeDescriptions	= nullptr;
 
+	// triangle list with no index buffer
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
 	inputAssemblyCreateInfo.sType						= VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	inputAssemblyCreateInfo.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -735,9 +733,10 @@ void HelloTriangleApp::createGraphicsPipeline()
 														  VK_COLOR_COMPONENT_B_BIT |															 
 														  VK_COLOR_COMPONENT_A_BIT;
 
-	colorBlendAttachment.blendEnable					= VK_FALSE;
-	colorBlendAttachment.srcColorBlendFactor			= VK_BLEND_FACTOR_ONE;  // Optional
-	colorBlendAttachment.dstColorBlendFactor			= VK_BLEND_FACTOR_ZERO; // Optional
+	// alpha blending
+	colorBlendAttachment.blendEnable					= VK_TRUE;
+	colorBlendAttachment.srcColorBlendFactor			= VK_BLEND_FACTOR_SRC_ALPHA;  // Optional
+	colorBlendAttachment.dstColorBlendFactor			= VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; // Optional
 	colorBlendAttachment.colorBlendOp					= VK_BLEND_OP_ADD;		// Optional
 	colorBlendAttachment.srcAlphaBlendFactor			= VK_BLEND_FACTOR_ONE;  // Optional
 	colorBlendAttachment.dstAlphaBlendFactor			= VK_BLEND_FACTOR_ZERO; // Optional
@@ -754,7 +753,7 @@ void HelloTriangleApp::createGraphicsPipeline()
 	colorBlendingCreateInfo.blendConstants[2]			= 0.0f;					// Optional
 	colorBlendingCreateInfo.blendConstants[3]			= 0.0f;					// Optional
 
-	constexpr uint32_t dynamicStatesSize				{2};
+	constexpr size_t dynamicStatesSize					{2};
 	VkDynamicState dynamicStates[dynamicStatesSize]		{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH};
 
 	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
@@ -805,6 +804,7 @@ void HelloTriangleApp::createFramebuffers()
 
 	for (size_t i = 0; i < swapChainImages.size(); ++i)
 	{
+		// the attachment for this buffer is the image view we already have created
 		VkImageView attachments[]	{swapChainImageViews[i]};
 
 		VkFramebufferCreateInfo framebufferCreateInfo{};
@@ -860,6 +860,11 @@ void HelloTriangleApp::createCommandBuffers()
 		beginInfo.sType									= VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags									= 0;		// Optional
 		beginInfo.pInheritanceInfo						= nullptr;  // Optional (use when using secondary command buffers)
+
+
+		// BEGIN 
+		// RECORD COMMANDS
+		// END
 
 		if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS)
 		{
@@ -924,7 +929,8 @@ void HelloTriangleApp::drawFrame()
 		recreateSwapChain();
 		return;
 	}
-	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+
+	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 	{
 		throw std::runtime_error("Failed to acquire swapchain image!");
 	}
@@ -936,22 +942,20 @@ void HelloTriangleApp::drawFrame()
 	}
 
 	// mark image as "in-use"
-	imagesInFlight[imageIndex] = inFlightFences[currentFrame];
+	imagesInFlight[imageIndex]							= inFlightFences[currentFrame];
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType									= VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore waitSemaphores[]						{imageAvailableSemaphores[currentFrame]};
 	VkPipelineStageFlags waitStages[]					{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	submitInfo.waitSemaphoreCount						= 1;
-	submitInfo.pWaitSemaphores							= waitSemaphores;
+	submitInfo.pWaitSemaphores							= &imageAvailableSemaphores[currentFrame];
 	submitInfo.pWaitDstStageMask						= waitStages;
 	submitInfo.commandBufferCount						= 1;
 	submitInfo.pCommandBuffers							= &commandBuffers[imageIndex];
 
-	VkSemaphore signalSemaphores[]						{renderFinishedSemaphores[currentFrame]};
 	submitInfo.signalSemaphoreCount						= 1;
-	submitInfo.pSignalSemaphores						= signalSemaphores;
+	submitInfo.pSignalSemaphores						= &renderFinishedSemaphores[currentFrame];
 
 	vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
@@ -963,7 +967,7 @@ void HelloTriangleApp::drawFrame()
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType									= VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount						= 1;
-	presentInfo.pWaitSemaphores							= signalSemaphores;
+	presentInfo.pWaitSemaphores							= &renderFinishedSemaphores[currentFrame];
 
 	VkSwapchainKHR swapChains[]							{swapChain};
 	presentInfo.swapchainCount							= 1;

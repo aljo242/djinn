@@ -62,7 +62,6 @@ private:
 	void recreateSwapChain();
 	void createSwapChainImages();
 	void createImageViews();
-	VkShaderModule createShaderModule(const std::vector<char>& code);
 	void createRenderPass();
 	void createGraphicsPipeline();
 	void createFramebuffers();
@@ -110,9 +109,9 @@ private:
 	VkSwapchainKHR swapChain{ VK_NULL_HANDLE };
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
+
 	std::vector<VkImage> swapChainImages;
 	std::vector<VkImageView> swapChainImageViews;
-
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 
 	VkCommandPool commandPool{ VK_NULL_HANDLE };
