@@ -1,6 +1,13 @@
 #include "hello.h"
 #include "gfxDebug.h"
 
+const std::vector<Vertex> vertices = {
+	{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+	{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+	{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+};
+
+
 HelloTriangleApp::HelloTriangleApp()
 {
 	initWindow();
@@ -40,6 +47,7 @@ void HelloTriangleApp::initVulkan()
 	createGraphicsPipeline();	//
 	createFramebuffers();		//
 	createCommandPool();		//
+	createVertexBuffer();		//
 	createCommandBuffers();		//
 	createSyncObjects();		//
 }
@@ -59,6 +67,8 @@ void HelloTriangleApp::cleanup()
 	vkDeviceWaitIdle(device);
 
 	cleanupSwapChain();
+
+	vkDestroyBuffer(device, vertexBuffer, nullptr);
 
 	// destroy sync objects
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
@@ -260,8 +270,12 @@ std::vector<const char*> HelloTriangleApp::getRequiredExtensions()
 // TODO expand this
 uint32_t HelloTriangleApp::rateDeviceSuitability(VkPhysicalDevice physicalDev)
 {
-	VkPhysicalDeviceProperties deviceProperties;
-	vkGetPhysicalDeviceProperties(physicalDev, &deviceProperties);
+	VkPhysicalDeviceProperties2 deviceProperties;
+	deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+
+	// TODO use pNext to query specific necessary features
+	deviceProperties.pNext = nullptr;
+	vkGetPhysicalDeviceProperties2(physicalDev, &deviceProperties);
 
 	VkPhysicalDeviceFeatures deviceFeatures;
 	vkGetPhysicalDeviceFeatures(physicalDev, &deviceFeatures);
@@ -269,19 +283,19 @@ uint32_t HelloTriangleApp::rateDeviceSuitability(VkPhysicalDevice physicalDev)
 	uint32_t score					{0};
 
 	//  huge score boost for discrete GPUs
-	if (deviceProperties.deviceType != VK_PHYSICAL_DEVICE_TYPE_OTHER)
+	if (deviceProperties.properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_OTHER)
 	{
-		score += 1000 * (4 - deviceProperties.deviceType);
+		score += 1000 * (4 - deviceProperties.properties.deviceType);
 	}
 
 	// prefer device with 1.2 over 1.1
-	if (deviceProperties.apiVersion >= VK_API_VERSION_1_2)
+	if (deviceProperties.properties.apiVersion >= VK_API_VERSION_1_2)
 	{
 		score += 500;
 	}
 
 	// maximum possible size of textures affect graphics quality
-	score += deviceProperties.limits.maxImageDimension2D;
+	score += deviceProperties.properties.limits.maxImageDimension2D;
 
 	// don't care if we can't use geometry shaders
 	// https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkPhysicalDeviceFeatures.html
@@ -409,7 +423,7 @@ void HelloTriangleApp::createLogicalDevice()
 	std::set<uint32_t> uniqueQueueFamilies {indices.graphicsFamily.value(), indices.presentFamily.value()};
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos(uniqueQueueFamilies.size());
 
-	float queuePriority{ 1.0f };
+	constexpr float queuePriority{ 1.0f };
 	size_t i{ 0 };
 	for (const auto& queueFamily : uniqueQueueFamilies)
 	{
@@ -657,26 +671,28 @@ void HelloTriangleApp::createGraphicsPipeline()
 	ShaderLoader fragShader("shader/frag.spv", device);
 
 	VkPipelineShaderStageCreateInfo vertShaderStageCreateInfo{};
-	vertShaderStageCreateInfo.sType						= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	vertShaderStageCreateInfo.stage						= VK_SHADER_STAGE_VERTEX_BIT;
-	vertShaderStageCreateInfo.module					= vertShader.shaderModule;
-	vertShaderStageCreateInfo.pName						= vertShader.pName;
+	vertShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vertShaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	vertShaderStageCreateInfo.module = vertShader.shaderModule;
+	vertShaderStageCreateInfo.pName = vertShader.pName;
 
 	VkPipelineShaderStageCreateInfo fragShaderStageCreateInfo{};
-	fragShaderStageCreateInfo.sType						= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	fragShaderStageCreateInfo.stage						= VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragShaderStageCreateInfo.module					= fragShader.shaderModule;
-	fragShaderStageCreateInfo.pName						= fragShader.pName;
+	fragShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	fragShaderStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragShaderStageCreateInfo.module = fragShader.shaderModule;
+	fragShaderStageCreateInfo.pName = fragShader.pName;
 
-	VkPipelineShaderStageCreateInfo shaderStages[]	{vertShaderStageCreateInfo, fragShaderStageCreateInfo};
+	VkPipelineShaderStageCreateInfo shaderStages[]{ vertShaderStageCreateInfo, fragShaderStageCreateInfo };
 
-	// currently have vertex info embedded into the vertex shader bytecode
+	const auto bindingDescription		{ Vertex::getBindingDescription() };
+	const auto attributeDescriptions	{Vertex::getAttributeDescriptions()};
+
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
 	vertexInputCreateInfo.sType							= VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputCreateInfo.pVertexBindingDescriptions	= nullptr;
-	vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputCreateInfo.pVertexAttributeDescriptions	= nullptr;
+	vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
+	vertexInputCreateInfo.pVertexBindingDescriptions	= &bindingDescription;
+	vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+	vertexInputCreateInfo.pVertexAttributeDescriptions	= attributeDescriptions.data();
 
 	// triangle list with no index buffer
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
@@ -838,6 +854,42 @@ void HelloTriangleApp::createCommandPool()
 	}
 }
 
+void HelloTriangleApp::createVertexBuffer()
+{
+	VkBufferCreateInfo bufferCreateInfo{};
+	bufferCreateInfo.sType			= VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferCreateInfo.size			= sizeof(vertices[0]) * vertices.size();
+	bufferCreateInfo.usage			= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	bufferCreateInfo.sharingMode	= VK_SHARING_MODE_EXCLUSIVE;
+
+	if (vkCreateBuffer(device, &bufferCreateInfo, nullptr, &vertexBuffer) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create vertex buffer!");
+	}
+
+	VkMemoryRequirements memRequirements;
+	vkGetBufferMemoryRequirements(device, vertexBuffer, &memRequirements);
+}
+
+uint32_t HelloTriangleApp::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{
+	VkPhysicalDeviceMemoryProperties memProperties;
+	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+	for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
+	{
+		if (typeFilter & (1 << i))
+		{
+			return i;
+		}
+	}
+
+	throw std::runtime_error("Failed to find suitable memory type!");
+
+	return 0;
+}
+
+
 void HelloTriangleApp::createCommandBuffers()
 {
 	commandBuffers.resize(swapChainFramebuffers.size());
@@ -922,6 +974,7 @@ void HelloTriangleApp::drawFrame()
 	vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
 	uint32_t imageIndex;
+	// if we acquire the image IMAGE_AVAILABLE semaphore will be signaled
 	VkResult result {vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex)};
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -947,31 +1000,29 @@ void HelloTriangleApp::drawFrame()
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType									= VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkPipelineStageFlags waitStages[]					{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+	// if IMAGE_AVAILABLE - We can submit to the queue
+	VkPipelineStageFlags waitStages						{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	submitInfo.waitSemaphoreCount						= 1;
 	submitInfo.pWaitSemaphores							= &imageAvailableSemaphores[currentFrame];
-	submitInfo.pWaitDstStageMask						= waitStages;
+	submitInfo.pWaitDstStageMask						= &waitStages;
 	submitInfo.commandBufferCount						= 1;
 	submitInfo.pCommandBuffers							= &commandBuffers[imageIndex];
-
 	submitInfo.signalSemaphoreCount						= 1;
 	submitInfo.pSignalSemaphores						= &renderFinishedSemaphores[currentFrame];
 
 	vkResetFences(device, 1, &inFlightFences[currentFrame]);
-
 	if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to submit draw command buffer!");
 	}
-
+ 
+	// if RENDER_FINISHED - we can present the image to the screen
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType									= VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount						= 1;
 	presentInfo.pWaitSemaphores							= &renderFinishedSemaphores[currentFrame];
-
-	VkSwapchainKHR swapChains[]							{swapChain};
 	presentInfo.swapchainCount							= 1;
-	presentInfo.pSwapchains								= swapChains;
+	presentInfo.pSwapchains								= &swapChain;
 	presentInfo.pImageIndices							= &imageIndex;
 	presentInfo.pResults								= nullptr;		// Optional
 

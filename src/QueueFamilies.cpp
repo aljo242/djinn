@@ -23,10 +23,16 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
 	QueueFamilyIndices indices;
 
 	uint32_t queueFamilyCount{ 0 };
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+	vkGetPhysicalDeviceQueueFamilyProperties2(device, &queueFamilyCount, nullptr);
 
-	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+	std::vector<VkQueueFamilyProperties2> queueFamilies(queueFamilyCount);
+	for (auto& queueFamily : queueFamilies)
+	{
+		queueFamily.sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
+		// TODO use pNext to query extra information
+		queueFamily.pNext = nullptr;
+	}
+	vkGetPhysicalDeviceQueueFamilyProperties2(device, &queueFamilyCount, queueFamilies.data());
 
 	uint32_t i{ 0 };
 	for (const auto& queueFamily : queueFamilies)
@@ -40,7 +46,7 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
 		}
 
 		// mark if the queue matches the requested type
-		if (queueFamily.queueFlags & flag)
+		if (queueFamily.queueFamilyProperties.queueFlags & flag)
 		{
 			indices.graphicsFamily.emplace(i);
 		}

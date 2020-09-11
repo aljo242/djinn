@@ -7,6 +7,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
+#include <glm/glm.hpp>
 #pragma warning(disable : 26812) // disabling a warning when including a header works normally for most warnings.
 
 #pragma warning(pop)
