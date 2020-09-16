@@ -9,6 +9,7 @@
 #include <map>
 #include <set>
 #include <algorithm>
+#include <assert.h>
 
 #include "ext_inc.h"
 #include "QueueFamilies.h"
@@ -66,6 +67,15 @@ private:
 	void createFramebuffers();
 	void createCommandPool();
 	void createVertexBuffer();
+	void createIndexBuffer();
+	void createUniformBuffers();
+	void createDescriptorPool();	
+	void createDescriptorSets();
+	void updateUniformBuffer(const uint32_t imageIndex);
+	void createBuffer(const VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
+		VkBuffer& buffer, VkDeviceMemory& bufferMemory, const VkDeviceSize offset, const VkSharingMode sharingMode);
+	void createDescriptorSetLayout();
+	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, const VkDeviceSize size);
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	void createCommandBuffers();
 	void createSyncObjects();
@@ -93,21 +103,23 @@ private:
 
 private:
 	// window data
-	GLFWwindow* window{ nullptr };
+	GLFWwindow* window								{ nullptr };
 
-	VkInstance instance{ VK_NULL_HANDLE };
-	VkPhysicalDevice physicalDevice{ VK_NULL_HANDLE };
-	VkDevice device{ VK_NULL_HANDLE };
-	VkSurfaceKHR surface{ VK_NULL_HANDLE };
+	VkInstance instance								{ VK_NULL_HANDLE };
+	VkPhysicalDevice physicalDevice					{ VK_NULL_HANDLE };
+	VkDevice device									{ VK_NULL_HANDLE };
+	VkSurfaceKHR surface							{ VK_NULL_HANDLE };
 
-	VkQueue graphicsQueue{ VK_NULL_HANDLE };
-	VkQueue presentQueue{ VK_NULL_HANDLE };
+	VkQueue graphicsQueue							{ VK_NULL_HANDLE };
+	VkQueue presentQueue							{ VK_NULL_HANDLE };
+	VkQueue transferQueue							{ VK_NULL_HANDLE }; 
 
-	VkPipelineLayout pipelineLayout{ VK_NULL_HANDLE };
-	VkRenderPass renderPass{ VK_NULL_HANDLE };
-	VkPipeline graphicsPipeline{ VK_NULL_HANDLE };
+	VkDescriptorSetLayout descriptorSetLayout		{ VK_NULL_HANDLE };
+	VkPipelineLayout pipelineLayout					{ VK_NULL_HANDLE };
+	VkRenderPass renderPass							{ VK_NULL_HANDLE };
+	VkPipeline graphicsPipeline						{ VK_NULL_HANDLE };
 
-	VkSwapchainKHR swapChain{ VK_NULL_HANDLE };
+	VkSwapchainKHR swapChain						{ VK_NULL_HANDLE };
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 
@@ -115,7 +127,8 @@ private:
 	std::vector<VkImageView> swapChainImageViews;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 
-	VkCommandPool commandPool{ VK_NULL_HANDLE };
+	VkCommandPool gfxCommandPool					{ VK_NULL_HANDLE };
+	VkCommandPool transferCommandPool				{ VK_NULL_HANDLE };
 	std::vector<VkCommandBuffer> commandBuffers;
 
 	// synchronization
@@ -129,7 +142,17 @@ private:
 
 	VkDebugUtilsMessengerEXT debugMessenger{ VK_NULL_HANDLE };
 
+	VkDescriptorPool descriptorPool;
+	std::vector<VkDescriptorSet> descriptorSets;
+
+	// TODO 
+	// combine vertex and index buffer into a single array
 	VkBuffer vertexBuffer;
+	VkDeviceMemory vertexBufferMemory;
+	VkBuffer indexBuffer;
+	VkDeviceMemory indexBufferMemory;
+	std::vector<VkBuffer> uniformBuffers;
+	std::vector<VkDeviceMemory> uniformBuffersMemory;
 };
 
 struct Vertex
@@ -155,14 +178,21 @@ struct Vertex
 		attributeDescriptions[0].format			= VK_FORMAT_R32G32_SFLOAT;
 		attributeDescriptions[0].offset			= offsetof(Vertex, position);
 
-		attributeDescriptions[1].binding = 0;
-		attributeDescriptions[1].location = 1;
-		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[1].offset = offsetof(Vertex, color);
+		attributeDescriptions[1].binding		= 0;
+		attributeDescriptions[1].location		= 1;
+		attributeDescriptions[1].format			= VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[1].offset			= offsetof(Vertex, color);
 
 		return attributeDescriptions;
 	}
 };
 
+
+struct UniformBufferObject
+{
+	alignas(16) glm::mat4 model;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 projection;
+};
 
 #endif 

@@ -8,11 +8,12 @@ struct QueueFamilyIndices
 {
 	std::optional<uint32_t> graphicsFamily{std::nullopt};
 	std::optional<uint32_t> presentFamily{ std::nullopt };
+	std::optional<uint32_t> transferFamily{ std::nullopt };
 
 	bool isComplete();
 	bool sameIndices();
 };
 
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, VkQueueFlagBits flag);
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 #endif

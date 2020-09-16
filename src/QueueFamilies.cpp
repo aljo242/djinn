@@ -3,7 +3,7 @@
 
 bool QueueFamilyIndices::isComplete()
 {
-	return graphicsFamily.has_value() && presentFamily.has_value();
+	return graphicsFamily.has_value() && presentFamily.has_value() && transferFamily.has_value();
 }
 
 bool QueueFamilyIndices::sameIndices()
@@ -18,7 +18,7 @@ bool QueueFamilyIndices::sameIndices()
 
 
 
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, VkQueueFlagBits flag)
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
 {
 	QueueFamilyIndices indices;
 
@@ -46,13 +46,21 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
 		}
 
 		// mark if the queue matches the requested type
-		if (queueFamily.queueFamilyProperties.queueFlags & flag)
+		if (queueFamily.queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
 		{
 			indices.graphicsFamily.emplace(i);
 		}
 
+		if ((queueFamily.queueFamilyProperties.queueFlags & VK_QUEUE_TRANSFER_BIT)
+			&&
+			!(queueFamily.queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT))
+		{
+			indices.transferFamily.emplace(i);
+		}
+
 		if (indices.isComplete())
 		{
+
 			break;
 		}
 
