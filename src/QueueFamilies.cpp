@@ -57,6 +57,10 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
 		{
 			indices.transferFamily.emplace(i);
 		}
+		else
+		{
+			indices.transferFamily.emplace(indices.graphicsFamily.value());
+		}
 
 		if (indices.isComplete())
 		{

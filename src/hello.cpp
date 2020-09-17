@@ -519,15 +519,17 @@ void HelloTriangleApp::createSwapChain()
 
 	if (!indices.sameIndices())
 	{
-		createInfo.imageSharingMode			= VK_SHARING_MODE_CONCURRENT;
+		sharingMode							= VK_SHARING_MODE_CONCURRENT;
+		createInfo.imageSharingMode			= sharingMode;
 		createInfo.queueFamilyIndexCount	= static_cast<uint32_t>(queueFamilyIndices.size());
 		createInfo.pQueueFamilyIndices		= queueFamilyIndices.data();
 	}
 	else
 	{
-		createInfo.imageSharingMode			= VK_SHARING_MODE_EXCLUSIVE;
-		createInfo.queueFamilyIndexCount	= 0;
-		createInfo.pQueueFamilyIndices		= nullptr;
+		sharingMode							= VK_SHARING_MODE_EXCLUSIVE;
+		createInfo.imageSharingMode			= sharingMode;
+		createInfo.queueFamilyIndexCount	= 1;
+		createInfo.pQueueFamilyIndices		= &queueFamilyIndices[0];
 	}
 
 	createInfo.preTransform					= swapChainSupport.capabilities.currentTransform; // if choose current transform, do nothing
@@ -906,14 +908,14 @@ void HelloTriangleApp::createVertexBuffer()
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 
-	createBuffer(bufferSize, stagingBufferFlags, stagingMemoryFlags, stagingBuffer, stagingBufferMemory, 0, VK_SHARING_MODE_CONCURRENT);
+	createBuffer(bufferSize, stagingBufferFlags, stagingMemoryFlags, stagingBuffer, stagingBufferMemory, 0);
 
 	void* data;
 	vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
 	memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
 	vkUnmapMemory(device, stagingBufferMemory);
 
-	createBuffer(bufferSize, vertexBufferFlags, vertexMemoryFlags, vertexBuffer, vertexBufferMemory, 0, VK_SHARING_MODE_CONCURRENT);
+	createBuffer(bufferSize, vertexBufferFlags, vertexMemoryFlags, vertexBuffer, vertexBufferMemory, 0);
 
 	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
@@ -936,14 +938,14 @@ void HelloTriangleApp::createIndexBuffer()
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 
-	createBuffer(bufferSize, stagingBufferFlags, stagingMemoryFlags, stagingBuffer, stagingBufferMemory, 0, VK_SHARING_MODE_CONCURRENT);
+	createBuffer(bufferSize, stagingBufferFlags, stagingMemoryFlags, stagingBuffer, stagingBufferMemory, 0);
 
 	void* data;
 	vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
 	memcpy(data, vertexIndices.data(), static_cast<size_t>(bufferSize));
 	vkUnmapMemory(device, stagingBufferMemory);
 
-	createBuffer(bufferSize, indexBufferFlags, indexMemoryFlags, indexBuffer, indexBufferMemory, 0, VK_SHARING_MODE_CONCURRENT);
+	createBuffer(bufferSize, indexBufferFlags, indexMemoryFlags, indexBuffer, indexBufferMemory, 0);
 
 	copyBuffer(stagingBuffer, indexBuffer, bufferSize);
 
@@ -965,7 +967,7 @@ void HelloTriangleApp::createUniformBuffers()
 
 	for (size_t i = 0; i < swapchainSize; ++i)
 	{
-		createBuffer(bufferSize, uniformBufferFlags, uniformMemoryFlags, uniformBuffers[i], uniformBuffersMemory[i], 0, VK_SHARING_MODE_EXCLUSIVE);
+		createBuffer(bufferSize, uniformBufferFlags, uniformMemoryFlags, uniformBuffers[i], uniformBuffersMemory[i], 0);
 	}
 }
 
@@ -1044,7 +1046,7 @@ void HelloTriangleApp::updateUniformBuffer(const uint32_t imageIndex)
 
 
 void HelloTriangleApp::createBuffer(const VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
-	VkBuffer& buffer, VkDeviceMemory& bufferMemory, const VkDeviceSize offset, const VkSharingMode sharingMode)
+	VkBuffer& buffer, VkDeviceMemory& bufferMemory, const VkDeviceSize offset)
 {
 	QueueFamilyIndices queueFamilyIndices{ findQueueFamilies(physicalDevice, surface) };
 	std::array<uint32_t, 2> queueFamilies{ queueFamilyIndices.graphicsFamily.value(), queueFamilyIndices.transferFamily.value() };
@@ -1120,7 +1122,8 @@ uint32_t HelloTriangleApp::findMemoryType(uint32_t typeFilter, VkMemoryPropertyF
 
 	for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
 	{
-		if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags) == properties)
+		bool memDetect { (typeFilter & (1 << i)) && ((memProperties.memoryTypes[i].propertyFlags & properties) == properties) };
+		if (memDetect)
 		{
 			return i;
 		}

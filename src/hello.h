@@ -73,7 +73,7 @@ private:
 	void createDescriptorSets();
 	void updateUniformBuffer(const uint32_t imageIndex);
 	void createBuffer(const VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
-		VkBuffer& buffer, VkDeviceMemory& bufferMemory, const VkDeviceSize offset, const VkSharingMode sharingMode);
+		VkBuffer& buffer, VkDeviceMemory& bufferMemory, const VkDeviceSize offset);
 	void createDescriptorSetLayout();
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, const VkDeviceSize size);
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
@@ -147,6 +147,7 @@ private:
 
 	// TODO 
 	// combine vertex and index buffer into a single array
+	VkSharingMode sharingMode;
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
 	VkBuffer indexBuffer;
