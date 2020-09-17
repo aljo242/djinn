@@ -1,0 +1,14 @@
+TODO for vulkan FW
+
+- find out mysterious growing memory bug
+
+rewrite the entire thing because now I know what is going on
+
+create abstractions for objects, rather than having monolithic master class
+
+gpu : properties, memory, formats
+context : instance, extensions, gpu, surface, semaphores (sync objects)
+
+switch phrasing around semaphores to "acquire" and "render"
+"acquire" - get next image from swapchain
+"render" - ensure image is ready to be rendered to (or is finished)
