@@ -54,6 +54,10 @@ private:
 	void createSurface();
 	bool checkDeviceExtensionSupport(VkPhysicalDevice physicalDev);
 	void pickPhysicalDevice();
+	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, const VkImageTiling tiling,
+		const VkFormatFeatureFlags features);
+	VkFormat findDepthFormat();
+	bool hasStencilComponent(const VkFormat format);
 	VkPhysicalDeviceFeatures  populateDeviceFeatures();
 	void createLogicalDevice();
 	// Swap Chain Extent is the resolution of the swap chain buffer image
@@ -66,6 +70,19 @@ private:
 	void createGraphicsPipeline();
 	void createFramebuffers();
 	void createCommandPool();
+	void createDepthResources();
+	void createTextureImage();
+	void createTextureImageView();
+	void createTextureSampler();
+	VkImageView createImageView(const VkImage image, const VkFormat format, const VkImageAspectFlags aspectFlags);
+	VkCommandBuffer beginSingleTimeCommands(VkCommandPool& commandPool);
+	void endSingleTimeCommands(VkCommandPool& commandPool, VkCommandBuffer commandBuffer);
+	void transitionImageLayout(VkImage image, const VkFormat format, const VkImageLayout oldLayout,
+		const VkImageLayout newLayout);
+	void copyBufferToImage(VkBuffer buffer, VkImage image, const uint32_t width, const uint32_t height);
+	void createImage(const uint32_t width, const uint32_t height, const VkFormat format,
+		const VkImageTiling tiling, const VkImageUsageFlags flags, 
+		const VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 	void createVertexBuffer();
 	void createIndexBuffer();
 	void createUniformBuffers();
@@ -90,7 +107,7 @@ private:
 	{
 		if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
 		{
-			spdlog::debug("Validation Layer {} Message: {}", messageType, pCallbackData->pMessage);
+			spdlog::debug("Validation Layer {} Message: {}\n", messageType, pCallbackData->pMessage);
 		}
 		return VK_FALSE;
 	}
@@ -146,7 +163,7 @@ private:
 	std::vector<VkDescriptorSet> descriptorSets;
 
 	// TODO 
-	// combine vertex and index buffer into a single array
+	// combine vertex and index buffer int o a single array
 	VkSharingMode sharingMode;
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
@@ -154,12 +171,22 @@ private:
 	VkDeviceMemory indexBufferMemory;
 	std::vector<VkBuffer> uniformBuffers;
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
+
+	VkImage textureImage;
+	VkDeviceMemory textureImageMemory;
+	VkImageView textureImageView;
+	VkSampler textureSampler;
+
+	VkImage depthImage;
+	VkDeviceMemory depthImageMemory;
+	VkImageView depthImageView;
 };
 
 struct Vertex
 {
-	glm::vec2 position;
+	glm::vec3 position;
 	glm::vec3 color;
+	glm::vec2 texCoord;
 
 	static VkVertexInputBindingDescription getBindingDescription() 
 	{
@@ -171,18 +198,23 @@ struct Vertex
 		return bindingDescription;
 	}
 
-	static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() 
+	static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() 
 	{
-		std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+		std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 		attributeDescriptions[0].binding		= 0;
 		attributeDescriptions[0].location		= 0;
-		attributeDescriptions[0].format			= VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[0].format			= VK_FORMAT_R32G32B32_SFLOAT;
 		attributeDescriptions[0].offset			= offsetof(Vertex, position);
 
 		attributeDescriptions[1].binding		= 0;
 		attributeDescriptions[1].location		= 1;
 		attributeDescriptions[1].format			= VK_FORMAT_R32G32B32_SFLOAT;
 		attributeDescriptions[1].offset			= offsetof(Vertex, color);
+
+		attributeDescriptions[2].binding		= 0;
+		attributeDescriptions[2].location		= 2;
+		attributeDescriptions[2].format			= VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[2].offset			= offsetof(Vertex, texCoord);
 
 		return attributeDescriptions;
 	}

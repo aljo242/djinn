@@ -16,6 +16,8 @@ macro(run_conan)
 		glm/0.9.9.8
 		glfw/3.3.2
 		spdlog/1.7.0
+		stb/20200203
+		tinyobjloader/1.0.6
 		OPTIONS
 		${CONAN_EXTRA_OPTIONS}
 		BASIC_SETUP

@@ -95,6 +95,8 @@ list(APPEND EXTRA_LIBS
 	CONAN_PKG::spdlog
 	CONAN_PKG::glm
 	CONAN_PKG::glfw
+	CONAN_PKG::stb
+	CONAN_PKG::tinyobjloader
 	)
 
 include(cmake/ConanConfig.cmake)
@@ -118,6 +120,15 @@ file(COPY
 	${CMAKE_CURRENT_SOURCE_DIR}/shader/bin/
 	DESTINATION
 	${CMAKE_BINARY_DIR}/bin/shader/
+)
+
+# step for copying textures to output dir
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/res/tex)
+
+file(COPY
+	${CMAKE_CURRENT_SOURCE_DIR}/res/tex
+	DESTINATION
+	${CMAKE_BINARY_DIR}/bin/res
 )
 
 ####################################################################################
