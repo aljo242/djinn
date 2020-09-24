@@ -124,9 +124,16 @@ file(COPY
 
 # step for copying textures to output dir
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/res/tex)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin/res/model)
 
 file(COPY
 	${CMAKE_CURRENT_SOURCE_DIR}/res/tex
+	DESTINATION
+	${CMAKE_BINARY_DIR}/bin/res
+)
+
+file(COPY
+	${CMAKE_CURRENT_SOURCE_DIR}/res/model
 	DESTINATION
 	${CMAKE_BINARY_DIR}/bin/res
 )
