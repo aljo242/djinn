@@ -120,6 +120,7 @@ private:
 	void createSurface();
 	bool checkDeviceExtensionSupport(VkPhysicalDevice physicalDev);
 	void pickPhysicalDevice();
+	VkSampleCountFlagBits getMaxUsableSampleCount();
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, const VkImageTiling tiling,
 		const VkFormatFeatureFlags features);
 	VkFormat findDepthFormat();
@@ -140,6 +141,7 @@ private:
 	void createTextureImage();
 	void createTextureImageView();
 	void createTextureSampler();
+	void createColorResources();
 	VkImageView createImageView(const VkImage image, const VkFormat format, const VkImageAspectFlags aspectFlags, const uint32_t mipLevels);
 	VkCommandBuffer beginSingleTimeCommands(VkCommandPool& commandPool);
 	void endSingleTimeCommands(VkCommandPool& commandPool, VkCommandBuffer commandBuffer);
@@ -148,7 +150,7 @@ private:
 	void copyBufferToImage(VkBuffer buffer, VkImage image, const uint32_t width, const uint32_t height);
 	void generateMipMaps(VkImage image, const VkFormat format, const uint32_t texWidth, const uint32_t texHeight, const uint32_t mipLevels);
 	void createImage(const uint32_t width, const uint32_t height, const uint32_t mipLevels, const VkFormat format,
-		const VkImageTiling tiling, const VkImageUsageFlags flags, 
+		const VkSampleCountFlagBits numSamples, const VkImageTiling tiling, const VkImageUsageFlags flags, 
 		const VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 	void loadModel();
 	void createVertexBuffer();
@@ -245,6 +247,12 @@ private:
 	VkDeviceMemory textureImageMemory;
 	VkImageView textureImageView;
 	VkSampler textureSampler;
+
+	// MSAA images
+	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT; // default to 1 sample
+	VkImage colorImage;
+	VkDeviceMemory colorImageMemory;
+	VkImageView colorImageView;
 
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;
