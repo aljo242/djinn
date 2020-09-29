@@ -140,13 +140,14 @@ private:
 	void createTextureImage();
 	void createTextureImageView();
 	void createTextureSampler();
-	VkImageView createImageView(const VkImage image, const VkFormat format, const VkImageAspectFlags aspectFlags);
+	VkImageView createImageView(const VkImage image, const VkFormat format, const VkImageAspectFlags aspectFlags, const uint32_t mipLevels);
 	VkCommandBuffer beginSingleTimeCommands(VkCommandPool& commandPool);
 	void endSingleTimeCommands(VkCommandPool& commandPool, VkCommandBuffer commandBuffer);
 	void transitionImageLayout(VkImage image, const VkFormat format, const VkImageLayout oldLayout,
-		const VkImageLayout newLayout);
+		const VkImageLayout newLayout, const uint32_t mipLevels);
 	void copyBufferToImage(VkBuffer buffer, VkImage image, const uint32_t width, const uint32_t height);
-	void createImage(const uint32_t width, const uint32_t height, const VkFormat format,
+	void generateMipMaps(VkImage image, const VkFormat format, const uint32_t texWidth, const uint32_t texHeight, const uint32_t mipLevels);
+	void createImage(const uint32_t width, const uint32_t height, const uint32_t mipLevels, const VkFormat format,
 		const VkImageTiling tiling, const VkImageUsageFlags flags, 
 		const VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 	void loadModel();
@@ -240,6 +241,7 @@ private:
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
 
 	VkImage textureImage;
+	uint32_t m_mipLevels;
 	VkDeviceMemory textureImageMemory;
 	VkImageView textureImageView;
 	VkSampler textureSampler;
