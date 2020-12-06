@@ -181,7 +181,7 @@ private:
 	// window data
 	GLFWwindow* window								{ nullptr };
 
-	DebugMessenger debugMessenger					{};
+	DebugMessenger<DebugLevel::warning> debugMessenger	{};
 
 	VkInstance instance								{ VK_NULL_HANDLE };
 	VkPhysicalDevice physicalDevice					{ VK_NULL_HANDLE };
