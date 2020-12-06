@@ -9,7 +9,6 @@
 #include <map>
 #include <set>
 #include <algorithm>
-#include <assert.h>
 
 #include "ext_inc.h"
 #include "QueueFamilies.h"
@@ -30,7 +29,7 @@ constexpr bool enableValidationlayers{ true };
 constexpr bool enableValidationlayers{ false };
 #endif
 
-#define DJINN_VK_ASSERT(stmt) (assert(stmt == VK_SUCCESS))
+
 
 
 struct Vertex

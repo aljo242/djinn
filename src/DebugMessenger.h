@@ -63,7 +63,7 @@ protected:
 				spdlog::error("Validation Layer {}, Message: {}\n", messageType, pCallbackData->pMessage);
 			}
 		}
-		else if constexpr (d == DebugLevel::warning)
+		else if constexpr(d == DebugLevel::warning)
 		{
 			if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
 			{

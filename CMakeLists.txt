@@ -14,7 +14,7 @@ endif()
 
 # link this 'library' to set c++ standard / compile time options
 add_library(project_options INTERFACE)
-target_compile_features(project_options INTERFACE cxx_std_17)
+target_compile_features(project_options INTERFACE cxx_std_20)
 
 
 if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
@@ -98,6 +98,8 @@ list(APPEND EXTRA_LIBS
 	CONAN_PKG::glfw
 	CONAN_PKG::stb
 	CONAN_PKG::tinyobjloader
+	CONAN_PKG::imgui
+	CONAN_PKG::sdl2
 	)
 
 include(cmake/ConanConfig.cmake)

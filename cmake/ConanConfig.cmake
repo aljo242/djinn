@@ -19,6 +19,7 @@ macro(run_conan)
 		stb/20200203 
 		tinyobjloader/1.0.6
 		imgui/1.79
+		sdl2/2.0.12@bincrafters/stable
 		OPTIONS
 		${CONAN_EXTRA_OPTIONS}
 		BASIC_SETUP

@@ -1,5 +1,6 @@
 #include "hello.h"
 #include "gfxDebug.h"
+#include "core/core.h"
 
 #include <chrono>
 
@@ -1122,7 +1123,6 @@ VkCommandBuffer HelloTriangleApp::beginSingleTimeCommands(VkCommandPool& command
 
 	return commandBuffer;
 }
-
 
 void HelloTriangleApp::endSingleTimeCommands(VkCommandPool& commandPool, VkCommandBuffer commandBuffer)
 {
