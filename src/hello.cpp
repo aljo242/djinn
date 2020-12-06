@@ -160,14 +160,10 @@ void HelloTriangleApp::createInstance()
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	createInfo.pApplicationInfo			= &appInfo;
 
-	// validation layers + debug info
-	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 	if constexpr (enableValidationlayers)
 	{
 		createInfo.enabledLayerCount	= static_cast<uint32_t>(validationLayers.size());
 		createInfo.ppEnabledLayerNames	= validationLayers.data();
-		populateDebugMessengerCreateInfo(debugCreateInfo);
-		createInfo.pNext				= (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 	}
 	else
 	{
