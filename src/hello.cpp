@@ -34,7 +34,8 @@ void HelloTriangleApp::initWindow()
 	window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan Window", nullptr, nullptr);
 
 	// use this to get access private members in the resize callback fxn
-	glfwSetWindowUserPointer(window, this);
+	// window now will point to class, so it can access private members
+	glfwSetWindowUserPointer(window, this); 
 	glfwSetFramebufferSizeCallback(window, framebufferResizedCallback);
 }
 
@@ -135,13 +136,13 @@ void HelloTriangleApp::createInstance()
 	appInfo.pEngineName         = "Djinn";
 	appInfo.engineVersion       = VK_MAKE_VERSION(1, 0, 0);
 
-	// check for the correct API version
-	// Djinn currently will only support Vulkan spec 1.1 and higher
 	if (vkGetInstanceProcAddr(NULL, "vkEnumerateInstanceVersion") == NULL)
 	{
-		throw std::runtime_error("Device only supports Vulkan 1.0.  Djinn currently supports Vulkan 1.1 and 1.2");
+		throw std::runtime_error("No Vulkan instance found.");
 	}
 
+	// check for the correct API version
+	// Djinn currently will only support Vulkan spec 1.1 and higher
 	uint32_t vulkanVersion{ 0 };
 	vkEnumerateInstanceVersion(&vulkanVersion);
 	if (vulkanVersion < VK_API_VERSION_1_1)
@@ -155,17 +156,12 @@ void HelloTriangleApp::createInstance()
 	vulkanExtensionCheck();
 #endif
 
-	uint32_t glfwExtensionCount	  {0};
-	const char** glfwExtensions{ glfwGetRequiredInstanceExtensions(&glfwExtensionCount) };
-
 	VkInstanceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	createInfo.pApplicationInfo			= &appInfo;
-	createInfo.enabledExtensionCount	= glfwExtensionCount;
-	createInfo.ppEnabledExtensionNames	= glfwExtensions;
 
 	// validation layers + debug info
-	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
+	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 	if constexpr (enableValidationlayers)
 	{
 		createInfo.enabledLayerCount	= static_cast<uint32_t>(validationLayers.size());
@@ -185,7 +181,7 @@ void HelloTriangleApp::createInstance()
 	createInfo.ppEnabledExtensionNames  = extensions.data();
 
 	auto result {vkCreateInstance(&createInfo, nullptr, &instance)};
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 }
 
 bool HelloTriangleApp::checkValidationLayerSupport()
@@ -272,14 +268,20 @@ void HelloTriangleApp::setupDebugMessenger()
 	populateDebugMessengerCreateInfo(createInfo);
 
 	auto result {CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger)};
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 }
 
 std::vector<const char*> HelloTriangleApp::getRequiredExtensions()
 {
 	uint32_t glfwExtensionCount		{0};
-	const char** glfwExtensions		{glfwGetRequiredInstanceExtensions(&glfwExtensionCount)};
+	const char** glfwExtensions		{glfwGetRequiredInstanceExtensions(&glfwExtensionCount)}; 
 
+	if (glfwExtensionCount == 0)
+	{
+		throw std::runtime_error("Error querying GLFW extension support.");
+	}
+
+	// copy array into vector object for ease of use
 	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount); // begin and end pointers
 
 	if constexpr (enableValidationlayers)
@@ -362,7 +364,7 @@ void HelloTriangleApp::createSurface()
 {
 	// exposing vulkan functions of glfw, so window creation becomes simplified
 	auto result {(glfwCreateWindowSurface(instance, window, nullptr, &surface))};
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 }
 
 // build up a set up of required extensions
@@ -540,7 +542,7 @@ void HelloTriangleApp::createLogicalDevice()
 	}
 
 	auto result {(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device))};
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 		
 	// use created Logical Device to fill VkQueue objects with their proper interfaces
 	// queues are automatically created with the Logical Device, which makes sense
@@ -604,7 +606,7 @@ void HelloTriangleApp::createSwapChain()
 	createInfo.oldSwapchain					= VK_NULL_HANDLE;
 
 	auto result {(vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain))};
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 
 	createSwapChainImages();
 
@@ -776,7 +778,7 @@ void HelloTriangleApp::createRenderPass()
 	renderPassInfo.pDependencies			= &dependency;
 
 	auto result {(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass))};
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 }
 
 void HelloTriangleApp::createGraphicsPipeline()
@@ -911,7 +913,7 @@ void HelloTriangleApp::createGraphicsPipeline()
 	pipelineLayoutInfo.pPushConstantRanges				= nullptr;				// Optional
 
 	auto result {(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout))};
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 
 	VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
 	pipelineCreateInfo.sType							= VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -933,7 +935,7 @@ void HelloTriangleApp::createGraphicsPipeline()
 	pipelineCreateInfo.basePipelineIndex				= -1;					// Optional
 
 	result = (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &graphicsPipeline));
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 }
 
 void HelloTriangleApp::createFramebuffers()
@@ -959,7 +961,7 @@ void HelloTriangleApp::createFramebuffers()
 		framebufferCreateInfo.layers					= 1;
 
 		auto result {(vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &swapChainFramebuffers[i]))};
-		assert(result == VK_SUCCESS);
+		DJINN_VK_ASSERT(result);
 	}
 }
 
@@ -973,7 +975,7 @@ void HelloTriangleApp::createCommandPool()
 	poolCreateInfo.flags								= 0;	// Optional
 
 	auto result {(vkCreateCommandPool(device, &poolCreateInfo, nullptr, &gfxCommandPool))};
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 
 	poolCreateInfo.queueFamilyIndex = queueFamilyIndices.transferFamily.value();
 
@@ -981,7 +983,7 @@ void HelloTriangleApp::createCommandPool()
 	poolCreateInfo.flags								= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 
 	result = (vkCreateCommandPool(device, &poolCreateInfo, nullptr, &transferCommandPool));
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 }
 
 
@@ -1054,7 +1056,7 @@ VkImageView HelloTriangleApp::createImageView(const VkImage image, const VkForma
 	viewCreateInfo.subresourceRange.layerCount = 1;
 
 	auto result{ vkCreateImageView(device, &viewCreateInfo, nullptr, &imageView)};
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 
 	return imageView;
 }
@@ -1086,7 +1088,7 @@ void HelloTriangleApp::createTextureSampler()
 	samplerCreateInfo.maxLod = static_cast<float>(m_mipLevels);
 
 	auto result {vkCreateSampler(device, &samplerCreateInfo, nullptr, &textureSampler)};
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 }
 
 
@@ -1332,7 +1334,7 @@ void HelloTriangleApp::createImage(const uint32_t width, const uint32_t height, 
 	imageCreateInfo.flags = 0; // opt
 
 	auto result{ vkCreateImage(device, &imageCreateInfo, nullptr, &image) };
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 
 	VkMemoryRequirements memRequirements;
 	vkGetImageMemoryRequirements(device, image, &memRequirements);
@@ -1343,7 +1345,7 @@ void HelloTriangleApp::createImage(const uint32_t width, const uint32_t height, 
 	allocateInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
 	result = vkAllocateMemory(device, &allocateInfo, nullptr, &imageMemory);
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 
 	vkBindImageMemory(device, image, imageMemory, 0);
 }
@@ -1425,7 +1427,7 @@ void HelloTriangleApp::createDescriptorSetLayout()
 	layoutCreateInfo.pBindings				= bindings.data();
 
 	auto result { (vkCreateDescriptorSetLayout(device, &layoutCreateInfo, nullptr, &descriptorSetLayout))};
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 }
 
 
@@ -1520,7 +1522,7 @@ void HelloTriangleApp::createDescriptorPool()
 	poolCreateInfo.maxSets								= static_cast<uint32_t>(swapChainImages.size());
 
 	auto result { (vkCreateDescriptorPool(device, &poolCreateInfo, nullptr, &descriptorPool))};
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 }
 
 
@@ -1535,7 +1537,7 @@ void HelloTriangleApp::createDescriptorSets()
 
 	descriptorSets.resize(swapChainImages.size());
 	auto result {(vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()))};
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 
 	for (size_t i = 0; i < swapChainImages.size(); ++i)
 	{
@@ -1612,7 +1614,7 @@ void HelloTriangleApp::createBuffer(const VkDeviceSize size, VkBufferUsageFlags 
 	bufferCreateInfo.pQueueFamilyIndices	= queueFamilies.data();
 
 	auto result {vkCreateBuffer(device, &bufferCreateInfo, nullptr, &buffer)};
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 
 	VkMemoryRequirements memRequirements;
 	vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
@@ -1624,7 +1626,7 @@ void HelloTriangleApp::createBuffer(const VkDeviceSize size, VkBufferUsageFlags 
 
 	// TODO : make custom allocator that manages this memory and passes offsets
 	result	= vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory);
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 
 	vkBindBufferMemory(device, buffer, bufferMemory, offset);
 }
@@ -1677,7 +1679,7 @@ void HelloTriangleApp::createCommandBuffers()
 	allocInfo.commandBufferCount						= static_cast<uint32_t>(commandBuffers.size());
 
 	auto result {vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data())};
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
 
 	// begin command buffer recording
 	for (size_t i = 0; i < commandBuffers.size(); ++i)
@@ -1693,7 +1695,7 @@ void HelloTriangleApp::createCommandBuffers()
 		// END
 
 		result = vkBeginCommandBuffer(commandBuffers[i], &beginInfo);
-		assert(result == VK_SUCCESS);
+		DJINN_VK_ASSERT(result);
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType							= VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1719,7 +1721,7 @@ void HelloTriangleApp::createCommandBuffers()
 		vkCmdEndRenderPass(commandBuffers[i]);
 
 		result = vkEndCommandBuffer(commandBuffers[i]);
-		assert(result == VK_SUCCESS);
+		DJINN_VK_ASSERT(result);
 	}	
 }
 
@@ -1787,7 +1789,7 @@ void HelloTriangleApp::drawFrame()
 
 	vkResetFences(device, 1, &inFlightFences[currentFrame]);
 	result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]);
-	assert(result == VK_SUCCESS);
+	DJINN_VK_ASSERT(result);
  
 	// if RENDER_FINISHED - we can present the image to the screen
 	VkPresentInfoKHR presentInfo{};

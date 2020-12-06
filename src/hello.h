@@ -29,6 +29,8 @@ constexpr bool enableValidationlayers{ true };
 constexpr bool enableValidationlayers{ false };
 #endif
 
+#define DJINN_VK_ASSERT(stmt) (assert(stmt == VK_SUCCESS))
+
 
 struct Vertex
 {

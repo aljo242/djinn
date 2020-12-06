@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
+set(CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE} CACHE STRING "")
 project(VulkanLearn VERSION 1.0
 	DESCRIPTION "learning Vulkan"
 	LANGUAGES CXX)
