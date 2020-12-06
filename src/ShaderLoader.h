@@ -17,10 +17,7 @@ public:
 
 private:
 	std::vector<char> code;
-	VkDevice m_device;
+	VkDevice m_device{VK_NULL_HANDLE};
 };
-
-
-
 
 #endif

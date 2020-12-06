@@ -8,7 +8,7 @@ add_executable(main
 	  
 	 "gfxDebug.cpp" 
 	  
-	 "main.cpp" "QueueFamilies.cpp" "SwapChainSupportDetails.cpp")
+	 "main.cpp" "QueueFamilies.cpp" "SwapChainSupportDetails.cpp" "DebugMessenger.h"  "core/core.h" )
 
 target_link_libraries(main PUBLIC
 		${EXTRA_LIBS}

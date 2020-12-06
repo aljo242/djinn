@@ -15,9 +15,11 @@ macro(run_conan)
 		${CONAN_EXTRA_REQUIRES}
 		glm/0.9.9.8
 		glfw/3.3.2
-		spdlog/1.7.0
-		stb/20200203
+		spdlog/1.8.1
+		stb/20200203 
 		tinyobjloader/1.0.6
+		imgui/1.79
+		sdl2/2.0.12@bincrafters/stable
 		OPTIONS
 		${CONAN_EXTRA_OPTIONS}
 		BASIC_SETUP
