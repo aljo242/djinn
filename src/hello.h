@@ -15,6 +15,7 @@
 #include "SwapChainSupportDetails.h"
 #include "ShaderLoader.h"
 #include "DebugMessenger.h"
+#include "core/core.h"
 
 constexpr uint32_t WIDTH{ 800 };
 constexpr uint32_t HEIGHT{ 600 };
@@ -172,6 +173,8 @@ private:
 
 	static void framebufferResizedCallback(GLFWwindow* window, const int width, const int height)
 	{
+		DJINN_UNUSED(width);
+		DJINN_UNUSED(height);
 		auto app{ reinterpret_cast<HelloTriangleApp*>(glfwGetWindowUserPointer(window)) };
 		app->framebufferResized = true;
 	}
