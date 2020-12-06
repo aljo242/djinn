@@ -111,7 +111,7 @@ void HelloTriangleApp::cleanup()
 
 	if constexpr (enableValidationlayers)
 	{
-		DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+		DestroyDebugUtilsMessengerEXT(instance, debugMessenger.handle, nullptr);
 	}
 
 	vkDestroySurfaceKHR(instance, surface, nullptr);
@@ -167,7 +167,7 @@ void HelloTriangleApp::createInstance()
 		createInfo.enabledLayerCount	= static_cast<uint32_t>(validationLayers.size());
 		createInfo.ppEnabledLayerNames	= validationLayers.data();
 		populateDebugMessengerCreateInfo(debugCreateInfo);
-		createInfo.pNext				= (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 	}
 	else
 	{
@@ -253,8 +253,8 @@ void HelloTriangleApp::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCre
 	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
 		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
 		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-	createInfo.pfnUserCallback = (PFN_vkDebugUtilsMessengerCallbackEXT)debugCallback;
-	createInfo.pUserData = nullptr; // optional data		
+	createInfo.pfnUserCallback = (PFN_vkDebugUtilsMessengerCallbackEXT)debugMessenger.debugCallback;
+	createInfo.pUserData = &debugMessenger;				// optional data		
 }
 
 void HelloTriangleApp::setupDebugMessenger()
@@ -267,7 +267,7 @@ void HelloTriangleApp::setupDebugMessenger()
 	VkDebugUtilsMessengerCreateInfoEXT createInfo{};
 	populateDebugMessengerCreateInfo(createInfo);
 
-	auto result {CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger)};
+	auto result {CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger.handle)};
 	DJINN_VK_ASSERT(result);
 }
 

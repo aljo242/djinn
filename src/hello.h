@@ -15,6 +15,7 @@
 #include "QueueFamilies.h"
 #include "SwapChainSupportDetails.h"
 #include "ShaderLoader.h"
+#include "DebugMessenger.h"
 
 constexpr uint32_t WIDTH{ 800 };
 constexpr uint32_t HEIGHT{ 600 };
@@ -170,20 +171,6 @@ private:
 	void createSyncObjects();
 	void drawFrame();
 
-	// matches signature from vulkan api
-	static VKAPI_ATTR VkBool32 VKAPI_CALL HelloTriangleApp::debugCallback(
-		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagBitsEXT messageType,
-		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData)
-	{
-		if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-		{
-			spdlog::debug("Validation Layer {} Message: {}\n", messageType, pCallbackData->pMessage);
-		}
-		return VK_FALSE;
-	}
-
 	static void framebufferResizedCallback(GLFWwindow* window, const int width, const int height)
 	{
 		auto app{ reinterpret_cast<HelloTriangleApp*>(glfwGetWindowUserPointer(window)) };
@@ -193,6 +180,8 @@ private:
 private:
 	// window data
 	GLFWwindow* window								{ nullptr };
+
+	DebugMessenger debugMessenger					{};
 
 	VkInstance instance								{ VK_NULL_HANDLE };
 	VkPhysicalDevice physicalDevice					{ VK_NULL_HANDLE };
@@ -228,8 +217,6 @@ private:
 	size_t currentFrame{ 0 };
 
 	bool framebufferResized{ false };
-
-	VkDebugUtilsMessengerEXT debugMessenger{ VK_NULL_HANDLE };
 
 	VkDescriptorPool descriptorPool;
 	std::vector<VkDescriptorSet> descriptorSets;
