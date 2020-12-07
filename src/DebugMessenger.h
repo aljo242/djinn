@@ -12,7 +12,11 @@ enum class DebugLevel
 template <DebugLevel d>
 class DebugMessenger
 {
+
 public:
+	VkDebugUtilsMessengerEXT handle{ VK_NULL_HANDLE };
+
+#if defined(_DEBUG)
 	uint32_t GetErrorCount() const
 	{
 		return errorCount;
@@ -36,7 +40,6 @@ public:
 		return pThis->Log(messageSeverity, messageType, pCallbackData);
 	}
 	
-	VkDebugUtilsMessengerEXT handle{ VK_NULL_HANDLE };
 
 protected:
 	uint32_t errorCount{0};
@@ -86,6 +89,7 @@ protected:
 		}
 		return VK_FALSE;
 	}
+#endif
 };
 
 

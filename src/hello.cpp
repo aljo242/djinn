@@ -244,6 +244,7 @@ void HelloTriangleApp::vulkanExtensionCheck()
 
 void HelloTriangleApp::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 {
+#if defined(_DEBUG)
 	createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
@@ -254,21 +255,24 @@ void HelloTriangleApp::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCre
 		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
 		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 	createInfo.pfnUserCallback = (PFN_vkDebugUtilsMessengerCallbackEXT)debugMessenger.debugCallback;
-	createInfo.pUserData = &debugMessenger;				// optional data		
+	createInfo.pUserData = &debugMessenger;				// optional data
+#endif
 }
 
 void HelloTriangleApp::setupDebugMessenger()
 {
-	if(!enableValidationlayers) 
+	if constexpr(!enableValidationlayers) 
 	{
 		return;
 	}
+	else 
+	{
+		VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+		populateDebugMessengerCreateInfo(createInfo);
 
-	VkDebugUtilsMessengerCreateInfoEXT createInfo{};
-	populateDebugMessengerCreateInfo(createInfo);
-
-	auto result {CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger.handle)};
-	DJINN_VK_ASSERT(result);
+		auto result{ CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger.handle) };
+		DJINN_VK_ASSERT(result);
+	}
 }
 
 std::vector<const char*> HelloTriangleApp::getRequiredExtensions()
