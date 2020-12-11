@@ -39,12 +39,6 @@ void HelloTriangleApp::initVulkan()
 
 	msaaSamples = _instance->renderConfig.msaaSamples;
 
-
-	//createInstance();			//
-	//setupDebugMessenger();		//
-	//createSurface();			//
-	//pickPhysicalDevice();		//
-	//createLogicalDevice();		//
 	createSwapChain();			//
 	createImageViews();			//
 	createRenderPass();			//
