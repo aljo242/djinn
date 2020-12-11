@@ -107,30 +107,15 @@ public:
 	void run();
 
 private:
-	void initWindow();
 	void initVulkan();
 	void mainLoop();
 	void cleanup();
 
-	void createInstance();
-	bool checkValidationLayerSupport();
-	void glfwExtensionCheck();
-	void vulkanExtensionCheck();
-	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-	void setupDebugMessenger();
-	std::vector<const char*> getRequiredExtensions();
 	// TODO expand this
-	uint32_t rateDeviceSuitability(VkPhysicalDevice physicalDev);
-	void createSurface();
-	bool checkDeviceExtensionSupport(VkPhysicalDevice physicalDev);
-	void pickPhysicalDevice();
-	VkSampleCountFlagBits getMaxUsableSampleCount();
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, const VkImageTiling tiling,
 		const VkFormatFeatureFlags features);
 	VkFormat findDepthFormat();
 	bool hasStencilComponent(const VkFormat format);
-	VkPhysicalDeviceFeatures  populateDeviceFeatures();
-	void createLogicalDevice();
 	// Swap Chain Extent is the resolution of the swap chain buffer image
 	void createSwapChain();
 	void cleanupSwapChain();
@@ -183,16 +168,6 @@ private:
 private:
 
 	Djinn::Instance*_instance;
-
-	// window data
-	GLFWwindow* window								{ nullptr };
-
-	DebugMessenger<DebugLevel::warning> debugMessenger	{};
-
-	VkInstance instance								{ VK_NULL_HANDLE };
-	VkPhysicalDevice physicalDevice					{ VK_NULL_HANDLE };
-	VkDevice device									{ VK_NULL_HANDLE };
-	VkSurfaceKHR surface							{ VK_NULL_HANDLE };
 
 	VkQueue graphicsQueue							{ VK_NULL_HANDLE };
 	VkQueue presentQueue							{ VK_NULL_HANDLE };
