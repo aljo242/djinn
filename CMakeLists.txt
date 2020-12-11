@@ -52,8 +52,8 @@ include(FindOpenMP)
 if(Vulkan_FOUND) 
 	MESSAGE("Found Vulkan SDK.")
 else()
-	MESSAGE("Could not find Vulkan SDK.  Verify that it is installed.")
-	return()
+	find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS ${CMAKE_SOURCE_DIR}/libs/vulkan)
+
 endif()
 
 if(OpenMP_CXX_FOUND) 

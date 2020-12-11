@@ -15,6 +15,7 @@
 #include "SwapChainSupportDetails.h"
 #include "ShaderLoader.h"
 #include "DebugMessenger.h"
+#include "core/Instance.h"
 #include "core/core.h"
 
 constexpr uint32_t WIDTH{ 800 };
@@ -180,6 +181,9 @@ private:
 	}
 
 private:
+
+	Djinn::Instance*_instance;
+
 	// window data
 	GLFWwindow* window								{ nullptr };
 
