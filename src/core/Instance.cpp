@@ -32,9 +32,9 @@ void Djinn::Instance::Init()
 	// basic app description
 	VkApplicationInfo appInfo{};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = APP_NAME;
+	appInfo.pApplicationName = APP_NAME.c_str();
 	appInfo.applicationVersion = APP_VERSION;
-	appInfo.pEngineName = ENGINE_NAME;
+	appInfo.pEngineName = ENGINE_NAME.c_str();
 	appInfo.engineVersion = ENGINE_VERSION;
 
 	if (vkGetInstanceProcAddr(NULL, "vkEnumerateInstanceVersion") == NULL)

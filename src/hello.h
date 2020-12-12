@@ -14,25 +14,18 @@
 #include "QueueFamilies.h"
 #include "SwapChainSupportDetails.h"
 #include "ShaderLoader.h"
-#include "DebugMessenger.h"
-#include "core/Instance.h"
 #include "core/core.h"
 
-constexpr uint32_t WIDTH{ 800 };
-constexpr uint32_t HEIGHT{ 600 };
+
+
 constexpr uint32_t MAX_FRAMES_IN_FLIGHT{ 2 };
 
-const std::vector<const char*> validationLayers{ "VK_LAYER_KHRONOS_validation" };
-const std::vector<const char*> deviceExtensions{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-#if defined(_DEBUG)
-constexpr bool enableValidationlayers{ true };
-#else
-constexpr bool enableValidationlayers{ false };
-#endif
-
-
-
+namespace Djinn 
+{
+	class Instance;
+	class SwapChain;
+}
 
 struct Vertex
 {
@@ -104,6 +97,7 @@ class HelloTriangleApp
 {
 public:
 	HelloTriangleApp();
+	~HelloTriangleApp();
 	void run();
 
 private:
@@ -167,7 +161,8 @@ private:
 
 private:
 
-	Djinn::Instance*_instance;
+	Djinn::Instance* _instance{ nullptr };
+	Djinn::SwapChain* _swapChain{ nullptr };
 
 	VkQueue graphicsQueue							{ VK_NULL_HANDLE };
 	VkQueue presentQueue							{ VK_NULL_HANDLE };

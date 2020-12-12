@@ -20,6 +20,8 @@ namespace Djinn
 	private:
 		void createSwapChainImages(Instance* p_instance);
 		void createFramebuffers(Instance* p_instance, Image* colorImage, Image* depthImage, RenderPass* renderPass);
+		void createFramebuffers(Instance* p_instance, std::vector<Image>& images, RenderPass* renderPass);
+
 
 	public:
 		VkSharingMode sharingMode;

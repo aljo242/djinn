@@ -1,6 +1,7 @@
 #include "hello.h"
-#include "gfxDebug.h"
-#include "core/core.h"
+#include "core/Instance.h"
+#include "core/SwapChain.h"
+#include "core/defs.h"
 
 #include <chrono>
 
@@ -10,13 +11,15 @@
 #define TINYOBJLOADER_IMPLEMENTATION // define this in only *one* .cc
 #include <tiny_obj_loader.h>
 
-const std::string MODEL_PATH {"res/model/viking_room.obj"};
-const std::string TEXTURE_PATH{ "res/tex/viking_room.png" };
-
 
 HelloTriangleApp::HelloTriangleApp()
 {
 	initVulkan();
+}
+
+HelloTriangleApp::~HelloTriangleApp()
+{
+	delete _instance;
 }
 
 void HelloTriangleApp::run()
@@ -24,7 +27,6 @@ void HelloTriangleApp::run()
 	mainLoop();
 	cleanup();
 }
-
 
 
 void HelloTriangleApp::initVulkan()
@@ -1386,9 +1388,9 @@ void HelloTriangleApp::drawFrame()
 
 	result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR || result != VK_SUBOPTIMAL_KHR || framebufferResized)
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result != VK_SUBOPTIMAL_KHR || _instance->framebufferResized)
 	{
-		framebufferResized = false;
+		_instance->framebufferResized = false;
 		recreateSwapChain();
 	}
 	else if (result != VK_SUCCESS)

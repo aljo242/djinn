@@ -1,6 +1,9 @@
 #ifndef DEFS_INCLUDE_H
 #define DEFS_INCLUDE_H
 
+#include <string>
+#include <vector>
+
 constexpr uint32_t INITIAL_WIN_WIDTH{ 1280 };
 constexpr uint32_t INITIAL_WIN_HEIGHT{ 720 };
 
@@ -14,9 +17,13 @@ constexpr bool ENABLE_VALIDATION_LAYERS{ false };
 #endif
 
 
-const char* APP_NAME{ "Hello Triangle" };
+const std::string APP_NAME{ "Hello Triangle" };
 constexpr uint32_t APP_VERSION{ VK_MAKE_VERSION(1, 0, 0) };
-const char* ENGINE_NAME{ "Djinn" };
+const std::string ENGINE_NAME{ "Djinn" };
 constexpr uint32_t ENGINE_VERSION{ VK_MAKE_VERSION(1, 0, 0) };
+
+
+const std::string MODEL_PATH{ "res/model/viking_room.obj" };
+const std::string TEXTURE_PATH{ "res/tex/viking_room.png" };
 
 #endif

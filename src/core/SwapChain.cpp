@@ -147,3 +147,32 @@ void Djinn::SwapChain::createFramebuffers(Instance* p_instance, Image* colorImag
 		DJINN_VK_ASSERT(result);
 	}
 }
+
+void Djinn::SwapChain::createFramebuffers(Instance* p_instance, std::vector<Image>& images, RenderPass* renderPass)
+{
+	swapChainFramebuffers.resize(swapChainImageViews.size());
+
+	std::vector<VkImageView> attachments(images.size() + 1);
+	for (size_t i = 0; i < images.size(); ++i)
+	{
+		attachments[i] = images[i].imageView;
+	}
+
+	for (size_t i = 0; i < swapChainImages.size(); ++i)
+	{
+		// the attachment for this buffer is the image view we already have created
+		attachments[attachments.size() - 1] = swapChainImageViews[i];
+
+		VkFramebufferCreateInfo framebufferCreateInfo{};
+		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferCreateInfo.renderPass = renderPass->renderPass;
+		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		framebufferCreateInfo.pAttachments = attachments.data();
+		framebufferCreateInfo.width = swapChainExtent.width;
+		framebufferCreateInfo.height = swapChainExtent.height;
+		framebufferCreateInfo.layers = 1;
+
+		auto result{ (vkCreateFramebuffer(p_instance->device, &framebufferCreateInfo, nullptr, &swapChainFramebuffers[i])) };
+		DJINN_VK_ASSERT(result);
+	}
+}
