@@ -16,11 +16,14 @@ namespace Djinn
 		SwapChain(Instance* p_instance);
 		void Init(Instance* p_instance);
 		void CleanUp(Instance* p_instance);
+		void createFramebuffers(Instance* p_instance, std::vector<Image>& images, VkRenderPass& renderPass);
+		void createFramebuffers(Instance* p_instance, VkImageView& colorImageView, VkImageView& depthImageView, VkRenderPass& renderPass);
 
 	private:
 		void createSwapChainImages(Instance* p_instance);
-		void createFramebuffers(Instance* p_instance, Image* colorImage, Image* depthImage, RenderPass* renderPass);
-		void createFramebuffers(Instance* p_instance, std::vector<Image>& images, RenderPass* renderPass);
+		//void createFramebuffers(Instance* p_instance, Image* colorImage, Image* depthImage, RenderPass* renderPass);
+
+
 
 
 	public:

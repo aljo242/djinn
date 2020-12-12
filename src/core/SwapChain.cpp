@@ -78,7 +78,6 @@ void Djinn::SwapChain::Init(Instance* p_instance)
 	const auto swapChainImageSize{ swapChainImages.size() };
 	swapChainImageViews.resize(swapChainImageSize);
 
-
 	for (size_t i = 0; i < swapChainImageSize; ++i)
 	{
 		VkImageViewCreateInfo viewCreateInfo{};
@@ -121,7 +120,36 @@ void Djinn::SwapChain::createSwapChainImages(Instance* p_instance)
 	vkGetSwapchainImagesKHR(p_instance->device, swapChain, &imageCount, swapChainImages.data());
 }
 
-void Djinn::SwapChain::createFramebuffers(Instance* p_instance, Image* colorImage, Image* depthImage, RenderPass* renderPass)
+
+
+//void Djinn::SwapChain::createFramebuffers(Instance* p_instance, Image* colorImage, Image* depthImage, RenderPass* renderPass)
+//{
+//	swapChainFramebuffers.resize(swapChainImageViews.size());
+//
+//	for (size_t i = 0; i < swapChainImages.size(); ++i)
+//	{
+//		// the attachment for this buffer is the image view we already have created
+//		std::array<VkImageView, 3> attachments = {
+//			colorImage->imageView,
+//			depthImage->imageView,
+//			swapChainImageViews[i]
+//		};
+//
+//		VkFramebufferCreateInfo framebufferCreateInfo{};
+//		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+//		framebufferCreateInfo.renderPass = renderPass->renderPass;
+//		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+//		framebufferCreateInfo.pAttachments = attachments.data();
+//		framebufferCreateInfo.width = swapChainExtent.width;
+//		framebufferCreateInfo.height = swapChainExtent.height;
+//		framebufferCreateInfo.layers = 1;
+//
+//		auto result{ (vkCreateFramebuffer(p_instance->device, &framebufferCreateInfo, nullptr, &swapChainFramebuffers[i])) };
+//		DJINN_VK_ASSERT(result);
+//	}
+//}
+
+void Djinn::SwapChain::createFramebuffers(Instance* p_instance, VkImageView& colorImageView, VkImageView& depthImageView, VkRenderPass& renderPass)
 {
 	swapChainFramebuffers.resize(swapChainImageViews.size());
 
@@ -129,14 +157,14 @@ void Djinn::SwapChain::createFramebuffers(Instance* p_instance, Image* colorImag
 	{
 		// the attachment for this buffer is the image view we already have created
 		std::array<VkImageView, 3> attachments = {
-			colorImage->imageView,
-			depthImage->imageView,
+			colorImageView,
+			depthImageView,
 			swapChainImageViews[i]
 		};
 
 		VkFramebufferCreateInfo framebufferCreateInfo{};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferCreateInfo.renderPass = renderPass->renderPass;
+		framebufferCreateInfo.renderPass = renderPass;
 		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 		framebufferCreateInfo.pAttachments = attachments.data();
 		framebufferCreateInfo.width = swapChainExtent.width;
@@ -148,7 +176,7 @@ void Djinn::SwapChain::createFramebuffers(Instance* p_instance, Image* colorImag
 	}
 }
 
-void Djinn::SwapChain::createFramebuffers(Instance* p_instance, std::vector<Image>& images, RenderPass* renderPass)
+void Djinn::SwapChain::createFramebuffers(Instance* p_instance, std::vector<Image>& images, VkRenderPass& renderPass)
 {
 	swapChainFramebuffers.resize(swapChainImageViews.size());
 
@@ -165,7 +193,7 @@ void Djinn::SwapChain::createFramebuffers(Instance* p_instance, std::vector<Imag
 
 		VkFramebufferCreateInfo framebufferCreateInfo{};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferCreateInfo.renderPass = renderPass->renderPass;
+		framebufferCreateInfo.renderPass = renderPass;
 		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 		framebufferCreateInfo.pAttachments = attachments.data();
 		framebufferCreateInfo.width = swapChainExtent.width;

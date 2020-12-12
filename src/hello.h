@@ -161,8 +161,8 @@ private:
 
 private:
 
-	Djinn::Instance* _instance{ nullptr };
-	Djinn::SwapChain* _swapChain{ nullptr };
+	Djinn::Instance* p_instance{ nullptr };
+	Djinn::SwapChain* p_swapChain{ nullptr };
 
 	VkQueue graphicsQueue							{ VK_NULL_HANDLE };
 	VkQueue presentQueue							{ VK_NULL_HANDLE };
