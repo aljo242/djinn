@@ -113,14 +113,10 @@ private:
 	VkFormat findDepthFormat();
 	bool hasStencilComponent(const VkFormat format);
 	// Swap Chain Extent is the resolution of the swap chain buffer image
-	void createSwapChain();
 	void cleanupSwapChain();
 	void recreateSwapChain();
-	void createSwapChainImages();
-	void createImageViews();
 	void createRenderPass();
 	void createGraphicsPipeline();
-	void createFramebuffers();
 	void createCommandPool();
 	void createDepthResources();
 	void createTextureImage();

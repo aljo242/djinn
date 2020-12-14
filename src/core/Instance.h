@@ -3,6 +3,7 @@
 
 #include "../DebugMessenger.h"
 #include "../ext_inc.h"
+#include "defs.h"
 #include "core.h"
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -16,11 +17,15 @@ struct RendererConfig
 namespace Djinn
 {
 
+
 	class Instance
 	{
 	public:
-		Instance() {}
+		Instance()
+			: windowWidth(INITIAL_WIN_WIDTH), windowHeight(INITIAL_WIN_HEIGHT)
+		{}
 		void Init();
+		void queryWindowSize();
 		void CleanUp();
 
 	private:
@@ -40,6 +45,8 @@ namespace Djinn
 		bool framebufferResized{false};
 
 		GLFWwindow* window{ nullptr };
+		int windowWidth{ 0 };
+		int windowHeight{ 0 };
 
 		VkInstance instance{ VK_NULL_HANDLE };
 		VkPhysicalDevice physicalDevice{ VK_NULL_HANDLE };

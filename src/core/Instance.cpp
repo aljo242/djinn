@@ -10,12 +10,13 @@
 
 void Djinn::Instance::Init()
 {
+
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// INIT WINDOW
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	window = glfwCreateWindow(INITIAL_WIN_WIDTH, INITIAL_WIN_HEIGHT, "Vulkan Window", nullptr, nullptr);
+	window = glfwCreateWindow(windowWidth, windowHeight, "Vulkan Window", nullptr, nullptr);
 
 	// use this to get access members in the resize callback fxn
 	// window now will point to class, so it can access private members
@@ -186,6 +187,20 @@ void Djinn::Instance::Init()
 
 	result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device);
 	DJINN_VK_ASSERT(result);
+}
+
+
+void Djinn::Instance::queryWindowSize()
+{
+	int width{ 0 };
+	int height{ 0 };
+	glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
+	// minimized window -> do no work
+	while (windowWidth == 0 || windowHeight == 0)
+	{
+		glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
+		glfwWaitEvents();
+	}
 }
 
 

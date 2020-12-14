@@ -44,8 +44,6 @@ void HelloTriangleApp::initVulkan()
 
 	p_swapChain = new Djinn::SwapChain(p_instance);
 
-	//createSwapChain();			//
-	//createImageViews();			//
 	createRenderPass();			//
 	createDescriptorSetLayout();//
 	createGraphicsPipeline();	//
@@ -169,28 +167,13 @@ bool HelloTriangleApp::hasStencilComponent(const VkFormat format)
 
 void HelloTriangleApp::cleanupSwapChain()
 {
-	for (auto framebuffer : p_swapChain->swapChainFramebuffers)
-	{
-		vkDestroyFramebuffer(p_instance->device, framebuffer, nullptr);
-	}
+	p_swapChain->CleanUp(p_instance);
+
 
 	vkFreeCommandBuffers(p_instance->device, gfxCommandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 	vkDestroyPipeline(p_instance->device, graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(p_instance->device, pipelineLayout, nullptr);
 	vkDestroyRenderPass(p_instance->device, renderPass, nullptr);
-
-	for (auto imageView : p_swapChain->swapChainImageViews)
-	{
-		vkDestroyImageView(p_instance->device, imageView, nullptr);
-	}
-
-	vkDestroySwapchainKHR(p_instance->device, p_swapChain->swapChain, nullptr);
-
-	for (size_t i = 0; i < p_swapChain->swapChainImages.size(); ++i)
-	{
-		vkDestroyBuffer(p_instance->device, uniformBuffers[i], nullptr);
-		vkFreeMemory(p_instance->device, uniformBuffersMemory[i], nullptr);
-	}
 
 	vkDestroyImageView(p_instance->device, colorImageView, nullptr);
 	vkDestroyImage(p_instance->device, colorImage, nullptr);
@@ -206,23 +189,20 @@ void HelloTriangleApp::cleanupSwapChain()
 
 void HelloTriangleApp::recreateSwapChain()
 {
-	int width {0};
-	int height {0};
-	glfwGetFramebufferSize(p_instance->window, &width, &height);
-	while (width == 0 || height == 0)
-	{
-		glfwGetFramebufferSize(p_instance->window, &width, &height);
-		glfwWaitEvents();
-	}
+	// check the size 
+	p_instance->queryWindowSize();
 
 	vkDeviceWaitIdle(p_instance->device);
 
 	cleanupSwapChain();
 
+	// re-init
+	p_swapChain->Init(p_instance);
 	createRenderPass();
 	createGraphicsPipeline();
 	createColorResources();
 	createDepthResources();
+	p_swapChain->createFramebuffers(p_instance, colorImageView, depthImageView, renderPass);
 	createUniformBuffers();
 	createDescriptorPool();		//
 	createDescriptorSets();		//
@@ -1261,12 +1241,6 @@ void HelloTriangleApp::drawFrame()
 	// if we acquire the image IMAGE_AVAILABLE semaphore will be signaled
 	auto result {vkAcquireNextImageKHR(p_instance->device, p_swapChain->swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex)};
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR)
-	{
-		recreateSwapChain();
-		return;
-	}
-
 	assert(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR);
 
 
@@ -1310,12 +1284,12 @@ void HelloTriangleApp::drawFrame()
 
 	result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
-	//if (result == VK_ERROR_OUT_OF_DATE_KHR || result != VK_SUBOPTIMAL_KHR || p_instance->framebufferResized)
-	//{
-	//	p_instance->framebufferResized = false;
-	//	recreateSwapChain();
-	//}
-	if (result != VK_SUCCESS)
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || p_instance->framebufferResized)
+	{
+		p_instance->framebufferResized = false;
+		recreateSwapChain();
+	}
+	else if (result != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to present swapchain image!");
 	}
