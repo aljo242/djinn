@@ -9,14 +9,14 @@
 #include <vulkan/vulkan.h>
 
 
-struct RendererConfig
-{
-	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT; // default to 1 sample
-};
+
 
 namespace Djinn
 {
-
+	struct RendererConfig
+	{
+		VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT; // default to 1 sample
+	};
 
 	class Instance
 	{
