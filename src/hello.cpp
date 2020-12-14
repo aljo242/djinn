@@ -51,7 +51,7 @@ void HelloTriangleApp::initVulkan()
 	createColorResources();     //
 	createDepthResources();		//
 	//createFramebuffers();		//
-	p_swapChain->createFramebuffers(p_instance, &_colorImage, &_depthImage, renderPass);
+	p_swapChain->createFramebuffers(p_instance, &colorImage, &depthImage, renderPass);
 	createCommandPool();		//
 	createTextureImage();		// 
 	createTextureImageView();	//
@@ -91,8 +91,8 @@ void HelloTriangleApp::cleanup()
 			vkFreeMemory(p_instance->device, uniformBuffersMemory[i], nullptr);
 	}
 
-	_colorImage.CleanUp(p_instance);
-	_depthImage.CleanUp(p_instance);
+	colorImage.CleanUp(p_instance);
+	depthImage.CleanUp(p_instance);
 
 	vkDestroyDescriptorPool(p_instance->device, descriptorPool, nullptr);
 
@@ -171,8 +171,8 @@ void HelloTriangleApp::cleanupSwapChain()
 	vkDestroyPipelineLayout(p_instance->device, pipelineLayout, nullptr);
 	vkDestroyRenderPass(p_instance->device, renderPass, nullptr);
 
-	_colorImage.CleanUp(p_instance);
-	_depthImage.CleanUp(p_instance);
+	colorImage.CleanUp(p_instance);
+	depthImage.CleanUp(p_instance);
 
 	vkDestroyDescriptorPool(p_instance->device, descriptorPool, nullptr);
 
@@ -193,7 +193,7 @@ void HelloTriangleApp::recreateSwapChain()
 	createGraphicsPipeline();
 	createColorResources();
 	createDepthResources();
-	p_swapChain->createFramebuffers(p_instance, &_colorImage, &_depthImage, renderPass);
+	p_swapChain->createFramebuffers(p_instance, &colorImage, &depthImage, renderPass);
 	createDescriptorPool();		//
 	createDescriptorSets();		//
 	createCommandBuffers();
@@ -463,12 +463,6 @@ void HelloTriangleApp::createDepthResources()
 {
 	const auto depthFormat {findDepthFormat()};
 
-	//createImage(p_swapChain->swapChainExtent.width, p_swapChain->swapChainExtent.height, 1, depthFormat, msaaSamples,
-	//	 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
-	//	VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
-	//
-	//depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-
 	Djinn::ImageCreateInfo createInfo{};
 	createInfo.width = p_swapChain->swapChainExtent.width;
 	createInfo.height = p_swapChain->swapChainExtent.height;
@@ -481,7 +475,7 @@ void HelloTriangleApp::createDepthResources()
 	createInfo.sharingMode = p_swapChain->sharingMode;
 	createInfo.numSamples = msaaSamples;
 
-	_depthImage.Init(p_instance, createInfo);
+	depthImage.Init(p_instance, createInfo);
 }
 
 void HelloTriangleApp::createTextureImage()
@@ -582,12 +576,6 @@ void HelloTriangleApp::createColorResources()
 {
 	const auto colorFormat = p_swapChain->swapChainImageFormat;
 
-	//createImage(p_swapChain->swapChainExtent.width, p_swapChain->swapChainExtent.height, 1, colorFormat,
-	//	msaaSamples, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
-	//	VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-	//	colorImage, colorImageMemory);
-	//colorImageView = createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-
 	Djinn::ImageCreateInfo createInfo{};
 	createInfo.width = p_swapChain->swapChainExtent.width;
 	createInfo.height = p_swapChain->swapChainExtent.height;
@@ -600,7 +588,7 @@ void HelloTriangleApp::createColorResources()
 	createInfo.sharingMode = p_swapChain->sharingMode;
 	createInfo.numSamples = msaaSamples;
 
-	_colorImage.Init(p_instance, createInfo);
+	colorImage.Init(p_instance, createInfo);
 
 }
 

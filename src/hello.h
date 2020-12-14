@@ -202,15 +202,9 @@ private:
 
 	// MSAA images
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT; // default to 1 sample
-	VkImage colorImage;
-	VkDeviceMemory colorImageMemory;
-	VkImageView colorImageView;
-	Djinn::Image _colorImage;
 
-	VkImage depthImage;
-	VkDeviceMemory depthImageMemory;
-	VkImageView depthImageView;
-	Djinn::Image _depthImage;
+	Djinn::Image colorImage;
+	Djinn::Image depthImage;
 
 
 	// model info
