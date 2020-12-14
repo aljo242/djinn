@@ -1,6 +1,7 @@
 #include "hello.h"
 #include "core/Instance.h"
 #include "core/SwapChain.h"
+#include "core/Image.h"
 #include "core/defs.h"
 
 
@@ -50,7 +51,7 @@ void HelloTriangleApp::initVulkan()
 	createColorResources();     //
 	createDepthResources();		//
 	//createFramebuffers();		//
-	p_swapChain->createFramebuffers(p_instance, colorImageView, depthImageView, renderPass);
+	p_swapChain->createFramebuffers(p_instance, &_colorImage, &_depthImage, renderPass);
 	createCommandPool();		//
 	createTextureImage();		// 
 	createTextureImageView();	//
@@ -90,13 +91,8 @@ void HelloTriangleApp::cleanup()
 			vkFreeMemory(p_instance->device, uniformBuffersMemory[i], nullptr);
 	}
 
-	vkDestroyImageView(p_instance->device, colorImageView, nullptr);
-	vkDestroyImage(p_instance->device, colorImage, nullptr);
-	vkFreeMemory(p_instance->device, colorImageMemory, nullptr);
-
-	vkDestroyImageView(p_instance->device, depthImageView, nullptr);
-	vkDestroyImage(p_instance->device, depthImage, nullptr);
-	vkFreeMemory(p_instance->device, depthImageMemory, nullptr);
+	_colorImage.CleanUp(p_instance);
+	_depthImage.CleanUp(p_instance);
 
 	vkDestroyDescriptorPool(p_instance->device, descriptorPool, nullptr);
 
@@ -175,13 +171,8 @@ void HelloTriangleApp::cleanupSwapChain()
 	vkDestroyPipelineLayout(p_instance->device, pipelineLayout, nullptr);
 	vkDestroyRenderPass(p_instance->device, renderPass, nullptr);
 
-	vkDestroyImageView(p_instance->device, colorImageView, nullptr);
-	vkDestroyImage(p_instance->device, colorImage, nullptr);
-	vkFreeMemory(p_instance->device, colorImageMemory, nullptr);
-
-	vkDestroyImageView(p_instance->device, depthImageView, nullptr);
-	vkDestroyImage(p_instance->device, depthImage, nullptr);
-	vkFreeMemory(p_instance->device, depthImageMemory, nullptr);
+	_colorImage.CleanUp(p_instance);
+	_depthImage.CleanUp(p_instance);
 
 	vkDestroyDescriptorPool(p_instance->device, descriptorPool, nullptr);
 
@@ -202,7 +193,7 @@ void HelloTriangleApp::recreateSwapChain()
 	createGraphicsPipeline();
 	createColorResources();
 	createDepthResources();
-	p_swapChain->createFramebuffers(p_instance, colorImageView, depthImageView, renderPass);
+	p_swapChain->createFramebuffers(p_instance, &_colorImage, &_depthImage, renderPass);
 	createDescriptorPool();		//
 	createDescriptorSets();		//
 	createCommandBuffers();
@@ -470,13 +461,27 @@ void HelloTriangleApp::createCommandPool()
 
 void HelloTriangleApp::createDepthResources()
 {
-	VkFormat depthFormat {findDepthFormat()};
+	const auto depthFormat {findDepthFormat()};
 
-	createImage(p_swapChain->swapChainExtent.width, p_swapChain->swapChainExtent.height, 1, depthFormat, msaaSamples,
-		 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
-	
-	depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+	//createImage(p_swapChain->swapChainExtent.width, p_swapChain->swapChainExtent.height, 1, depthFormat, msaaSamples,
+	//	 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
+	//	VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
+	//
+	//depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+
+	Djinn::ImageCreateInfo createInfo{};
+	createInfo.width = p_swapChain->swapChainExtent.width;
+	createInfo.height = p_swapChain->swapChainExtent.height;
+	createInfo.mipLevels = 1;
+	createInfo.format = depthFormat;
+	createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	createInfo.memoryFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	createInfo.usageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	createInfo.aspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
+	createInfo.sharingMode = p_swapChain->sharingMode;
+	createInfo.numSamples = msaaSamples;
+
+	_depthImage.Init(p_instance, createInfo);
 }
 
 void HelloTriangleApp::createTextureImage()
@@ -577,14 +582,25 @@ void HelloTriangleApp::createColorResources()
 {
 	const auto colorFormat = p_swapChain->swapChainImageFormat;
 
-	createImage(p_swapChain->swapChainExtent.width, p_swapChain->swapChainExtent.height, 1, colorFormat,
-		msaaSamples, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
-		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		colorImage, colorImageMemory);
-	colorImageView = createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+	//createImage(p_swapChain->swapChainExtent.width, p_swapChain->swapChainExtent.height, 1, colorFormat,
+	//	msaaSamples, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
+	//	VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+	//	colorImage, colorImageMemory);
+	//colorImageView = createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 
+	Djinn::ImageCreateInfo createInfo{};
+	createInfo.width = p_swapChain->swapChainExtent.width;
+	createInfo.height = p_swapChain->swapChainExtent.height;
+	createInfo.mipLevels = 1;
+	createInfo.format = colorFormat;
+	createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	createInfo.memoryFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	createInfo.usageFlags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	createInfo.aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+	createInfo.sharingMode = p_swapChain->sharingMode;
+	createInfo.numSamples = msaaSamples;
 
-	//_colorImage = 
+	_colorImage.Init(p_instance, createInfo);
 
 }
 

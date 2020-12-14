@@ -8,6 +8,7 @@ namespace Djinn
 
 	class Instance;
 	class RenderPass;
+	class Image;
 
 	class SwapChain
 	{
@@ -16,11 +17,12 @@ namespace Djinn
 		void Init(Instance* p_instance);
 		void CleanUp(Instance* p_instance);
 		void createFramebuffers(Instance* p_instance, VkImageView& colorImageView, VkImageView& depthImageView, VkRenderPass& renderPass);
+		void createFramebuffers(Instance* p_instance, Image* colorImage, Image* depthImage, VkRenderPass& renderPass);
+
 
 	private:
 		void createSwapChainImages(Instance* p_instance);
 		void createSwapChainImageViews(Instance* p_instance);
-		//void createFramebuffers(Instance* p_instance, Image* colorImage, Image* depthImage, RenderPass* renderPass);
 
 
 	public:

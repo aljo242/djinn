@@ -38,7 +38,7 @@ namespace Djinn
 		void Init(Instance* p_instance, const ImageCreateInfo& createInfo);
 		void CleanUp(Instance* p_instance);
 
-	private:
+	public:
 		VkImage image					{ VK_NULL_HANDLE };
 		VkImageView imageView			{ VK_NULL_HANDLE };
 		VkDeviceMemory imageMemory		{ VK_NULL_HANDLE };

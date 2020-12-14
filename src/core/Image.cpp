@@ -58,7 +58,7 @@ void Djinn::Image::Init(Instance* p_instance, const ImageCreateInfo& createInfo)
 
 	VkImageViewCreateInfo viewCreateInfo{};
 	viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	viewCreateInfo.image = this->image;
+	viewCreateInfo.image = image;
 	viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 	viewCreateInfo.format = createInfo.format;
 	viewCreateInfo.subresourceRange.aspectMask = createInfo.aspectFlags;
