@@ -5,6 +5,8 @@
 #include "../ext_inc.h"
 #include "core.h"
 #include <vector>
+#include <vulkan/vulkan.h>
+
 
 struct RendererConfig
 {

@@ -75,25 +75,7 @@ void Djinn::SwapChain::Init(Instance* p_instance)
 	swapChainImageFormat = surfaceFormat.format;
 	swapChainExtent = extent;
 
-	const auto swapChainImageSize{ swapChainImages.size() };
-	swapChainImageViews.resize(swapChainImageSize);
-
-	for (size_t i = 0; i < swapChainImageSize; ++i)
-	{
-		VkImageViewCreateInfo viewCreateInfo{};
-		viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewCreateInfo.image = swapChainImages[i];
-		viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewCreateInfo.format = swapChainImageFormat;
-		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		viewCreateInfo.subresourceRange.baseMipLevel = 0;
-		viewCreateInfo.subresourceRange.levelCount = 1;
-		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		viewCreateInfo.subresourceRange.layerCount = 1;
-
-		auto result{ vkCreateImageView(p_instance->device, &viewCreateInfo, nullptr, &swapChainImageViews[i]) };
-		DJINN_VK_ASSERT(result);
-	}
+	createSwapChainImageViews(p_instance);
 }
 
 void Djinn::SwapChain::CleanUp(Instance* p_instance)
@@ -118,9 +100,18 @@ void Djinn::SwapChain::createSwapChainImages(Instance* p_instance)
 	vkGetSwapchainImagesKHR(p_instance->device, swapChain, &imageCount, nullptr);
 	swapChainImages.resize(imageCount);
 	vkGetSwapchainImagesKHR(p_instance->device, swapChain, &imageCount, swapChainImages.data());
+
 }
 
-
+void Djinn::SwapChain::createSwapChainImageViews(Instance* p_instance)
+{
+	const auto swapChainImageSize{ swapChainImages.size() };
+	swapChainImageViews.resize(swapChainImageSize);
+	for (size_t i = 0; i < swapChainImageSize; ++i)
+	{
+		swapChainImageViews[i] = createImageView(p_instance, swapChainImages[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+	}
+}
 
 //void Djinn::SwapChain::createFramebuffers(Instance* p_instance, Image* colorImage, Image* depthImage, RenderPass* renderPass)
 //{
@@ -176,31 +167,3 @@ void Djinn::SwapChain::createFramebuffers(Instance* p_instance, VkImageView& col
 	}
 }
 
-void Djinn::SwapChain::createFramebuffers(Instance* p_instance, std::vector<Image>& images, VkRenderPass& renderPass)
-{
-	swapChainFramebuffers.resize(swapChainImageViews.size());
-
-	std::vector<VkImageView> attachments(images.size() + 1);
-	for (size_t i = 0; i < images.size(); ++i)
-	{
-		attachments[i] = images[i].imageView;
-	}
-
-	for (size_t i = 0; i < swapChainImages.size(); ++i)
-	{
-		// the attachment for this buffer is the image view we already have created
-		attachments[attachments.size() - 1] = swapChainImageViews[i];
-
-		VkFramebufferCreateInfo framebufferCreateInfo{};
-		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferCreateInfo.renderPass = renderPass;
-		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		framebufferCreateInfo.pAttachments = attachments.data();
-		framebufferCreateInfo.width = swapChainExtent.width;
-		framebufferCreateInfo.height = swapChainExtent.height;
-		framebufferCreateInfo.layers = 1;
-
-		auto result{ (vkCreateFramebuffer(p_instance->device, &framebufferCreateInfo, nullptr, &swapChainFramebuffers[i])) };
-		DJINN_VK_ASSERT(result);
-	}
-}

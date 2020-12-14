@@ -15,6 +15,8 @@
 #include "SwapChainSupportDetails.h"
 #include "ShaderLoader.h"
 #include "core/core.h"
+#include <vulkan/vulkan.h>
+
 
 
 
@@ -172,14 +174,6 @@ private:
 	VkPipelineLayout pipelineLayout					{ VK_NULL_HANDLE };
 	VkRenderPass renderPass							{ VK_NULL_HANDLE };
 	VkPipeline graphicsPipeline						{ VK_NULL_HANDLE };
-
-	VkSwapchainKHR swapChain						{ VK_NULL_HANDLE };
-	VkFormat swapChainImageFormat;
-	VkExtent2D swapChainExtent;
-
-	std::vector<VkImage> swapChainImages;
-	std::vector<VkImageView> swapChainImageViews;
-	std::vector<VkFramebuffer> swapChainFramebuffers;
 
 	VkCommandPool gfxCommandPool					{ VK_NULL_HANDLE };
 	VkCommandPool transferCommandPool				{ VK_NULL_HANDLE };
