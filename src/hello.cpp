@@ -203,13 +203,10 @@ void HelloTriangleApp::recreateSwapChain()
 	createColorResources();
 	createDepthResources();
 	p_swapChain->createFramebuffers(p_instance, colorImageView, depthImageView, renderPass);
-	createUniformBuffers();
 	createDescriptorPool();		//
 	createDescriptorSets();		//
 	createCommandBuffers();
 }
-
-
 
 
 void HelloTriangleApp::createRenderPass()

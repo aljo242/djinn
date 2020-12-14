@@ -12,7 +12,6 @@
 
 #include "ext_inc.h"
 #include "QueueFamilies.h"
-#include "SwapChainSupportDetails.h"
 #include "ShaderLoader.h"
 #include "core/core.h"
 #include "core/Image.h"

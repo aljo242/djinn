@@ -3,10 +3,10 @@
 #include <set>
 
 #include "Instance.h"
+#include "SwapChain.h"
 #include "defs.h"
 #include "../gfxDebug.h"
 #include "../QueueFamilies.h"
-#include "../SwapChainSupportDetails.h"
 
 void Djinn::Instance::Init()
 {
