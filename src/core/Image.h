@@ -30,17 +30,18 @@ namespace Djinn
 	};
 
 
-	class djinnImage
+	class Image
 	{
 	public:
-		djinnImage(Instance* p_instance, const ImageCreateInfo& createInfo);
+		Image();
+		Image(Instance* p_instance, const ImageCreateInfo& createInfo);
 		void Init(Instance* p_instance, const ImageCreateInfo& createInfo);
 		void CleanUp(Instance* p_instance);
 
 	private:
-		VkImage image{ VK_NULL_HANDLE };
-		VkImageView imageView{ VK_NULL_HANDLE };
-		VkDeviceMemory imageMemory{ VK_NULL_HANDLE };
+		VkImage image					{ VK_NULL_HANDLE };
+		VkImageView imageView			{ VK_NULL_HANDLE };
+		VkDeviceMemory imageMemory		{ VK_NULL_HANDLE };
 	};
 }
 

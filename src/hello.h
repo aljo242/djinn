@@ -15,8 +15,8 @@
 #include "SwapChainSupportDetails.h"
 #include "ShaderLoader.h"
 #include "core/core.h"
+#include "core/Image.h"
 #include <vulkan/vulkan.h>
-
 
 
 
@@ -212,10 +212,13 @@ private:
 	VkImage colorImage;
 	VkDeviceMemory colorImageMemory;
 	VkImageView colorImageView;
+	Djinn::Image _colorImage;
 
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
+	Djinn::Image _depthImage;
+
 
 	// model info
 	std::vector<Vertex> vertices;

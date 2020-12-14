@@ -3,6 +3,7 @@
 #include "core/SwapChain.h"
 #include "core/defs.h"
 
+
 #include <chrono>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -604,6 +605,10 @@ void HelloTriangleApp::createColorResources()
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		colorImage, colorImageMemory);
 	colorImageView = createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+
+
+	//_colorImage = 
+
 }
 
 VkCommandBuffer HelloTriangleApp::beginSingleTimeCommands(VkCommandPool& commandPool	)

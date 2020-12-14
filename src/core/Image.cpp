@@ -2,20 +2,21 @@
 #include "Memory.h"
 
 
-
-Djinn::djinnImage::djinnImage(Instance* p_instance, const ImageCreateInfo& createInfo)
+Djinn::Image::Image(Instance* p_instance, const ImageCreateInfo& createInfo)
 {
 	Init(p_instance, createInfo);
 }
 
-void Djinn::djinnImage::CleanUp(Instance* p_instance)
+Djinn::Image::Image() {}
+
+void Djinn::Image::CleanUp(Instance* p_instance)
 {
 	vkDestroyImageView(p_instance->device, imageView, nullptr);
 	vkDestroyImage(p_instance->device, image, nullptr);
 	vkFreeMemory(p_instance->device, imageMemory, nullptr);
 }
 
-void Djinn::djinnImage::Init(Instance* p_instance, const ImageCreateInfo& createInfo)
+void Djinn::Image::Init(Instance* p_instance, const ImageCreateInfo& createInfo)
 {
 	VkImageCreateInfo imageCreateInfo{};
 	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
