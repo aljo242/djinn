@@ -1,9 +1,9 @@
 #include "Memory.h"
 
-uint32_t Djinn::findMemoryType(Instance* p_instance, const uint32_t typeFilter, const VkMemoryPropertyFlags properties)
+uint32_t Djinn::findMemoryType(Context* p_context, const uint32_t typeFilter, const VkMemoryPropertyFlags properties)
 {
 	VkPhysicalDeviceMemoryProperties memProperties;
-	vkGetPhysicalDeviceMemoryProperties(p_instance->physicalDevice, &memProperties);
+	vkGetPhysicalDeviceMemoryProperties(p_context->physicalDevice, &memProperties);
 
 	for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
 	{

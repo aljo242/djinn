@@ -8,7 +8,7 @@ add_executable(main
 	  
 	 "gfxDebug.cpp" 
 	  
-	 "main.cpp" "QueueFamilies.cpp"  "DebugMessenger.h"  "core/core.h"  "core/Instance.h" "core/Instance.cpp" "core/defs.h" "core/SwapChain.h" "core/SwapChain.cpp" "core/Image.h"  "core/Memory.h" "core/Memory.cpp" "core/RenderPass.h" "core/Image.cpp")
+	 "main.cpp" "QueueFamilies.cpp"  "DebugMessenger.h"  "core/core.h"  "core/Context.h" "core/Context.cpp" "core/defs.h" "core/SwapChain.h" "core/SwapChain.cpp" "core/Image.h"  "core/Memory.h" "core/Memory.cpp" "core/RenderPass.h" "core/Image.cpp")
 
 target_link_libraries(main PUBLIC
 		${EXTRA_LIBS}

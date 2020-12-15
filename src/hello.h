@@ -22,7 +22,7 @@ constexpr uint32_t MAX_FRAMES_IN_FLIGHT{ 2 };
 
 namespace Djinn 
 {
-	class Instance;
+	class Context;
 	class SwapChain;
 }
 
@@ -156,7 +156,7 @@ private:
 
 private:
 
-	Djinn::Instance* p_instance{ nullptr };
+	Djinn::Context* p_context{ nullptr };
 	Djinn::SwapChain* p_swapChain{ nullptr };
 
 	VkQueue graphicsQueue							{ VK_NULL_HANDLE };

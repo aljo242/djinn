@@ -2,12 +2,12 @@
 #define MEMORY_INCLUDE_H
 
 #include "../ext_inc.h"
-#include "Instance.h"
+#include "Context.h"
 
 namespace Djinn
 {
 
-	uint32_t findMemoryType(Instance* p_instance, const uint32_t typeFilter, const VkMemoryPropertyFlags properties);
+	uint32_t findMemoryType(Context* p_context, const uint32_t typeFilter, const VkMemoryPropertyFlags properties);
 
 }
 
