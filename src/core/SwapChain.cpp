@@ -42,7 +42,7 @@ void Djinn::SwapChain::Init(Context* p_context)
 	// use VK_IMAGE_USAGE_TRANSFER_DST_BIT if post-processing steps desired
 
 	// TODO REVISIT imageSharingMode 
-	QueueFamilyIndices indices{ findQueueFamilies(p_context->physicalDevice, p_context->surface) };
+	QueueFamilyIndices indices{ findQueueFamilies(p_context->gpuInfo.gpu, p_context->surface) };
 	std::array<uint32_t, 2> queueFamilyIndices{ indices.graphicsFamily.value(), indices.transferFamily.value() };
 
 	if (!indices.sameIndices())
@@ -66,7 +66,7 @@ void Djinn::SwapChain::Init(Context* p_context)
 	createInfo.clipped = VK_TRUE; // ignored obscured for performance benefit
 	createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-	auto result{ (vkCreateSwapchainKHR(p_context->device, &createInfo, nullptr, &swapChain)) };
+	auto result{ (vkCreateSwapchainKHR(p_context->gpuInfo.device, &createInfo, nullptr, &swapChain)) };
 	DJINN_VK_ASSERT(result);
 
 	createSwapChainImages(p_context);
@@ -83,23 +83,23 @@ void Djinn::SwapChain::CleanUp(Context* p_context)
 
 	for (auto framebuffer : swapChainFramebuffers)
 	{
-		vkDestroyFramebuffer(p_context->device, framebuffer, nullptr);
+		vkDestroyFramebuffer(p_context->gpuInfo.device, framebuffer, nullptr);
 	}
 
 	for (auto imageView : swapChainImageViews)
 	{
-		vkDestroyImageView(p_context->device, imageView, nullptr);
+		vkDestroyImageView(p_context->gpuInfo.device, imageView, nullptr);
 	}
 
-	vkDestroySwapchainKHR(p_context->device, swapChain, nullptr);
+	vkDestroySwapchainKHR(p_context->gpuInfo.device, swapChain, nullptr);
 }
 
 void Djinn::SwapChain::createSwapChainImages(Context* p_context)
 {
 	uint32_t imageCount{ 0 };
-	vkGetSwapchainImagesKHR(p_context->device, swapChain, &imageCount, nullptr);
+	vkGetSwapchainImagesKHR(p_context->gpuInfo.device, swapChain, &imageCount, nullptr);
 	swapChainImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(p_context->device, swapChain, &imageCount, swapChainImages.data());
+	vkGetSwapchainImagesKHR(p_context->gpuInfo.device, swapChain, &imageCount, swapChainImages.data());
 
 }
 
@@ -136,7 +136,7 @@ void Djinn::SwapChain::createFramebuffers(Context* p_context, Image* colorImage,
 		framebufferCreateInfo.height = swapChainExtent.height;
 		framebufferCreateInfo.layers = 1;
 
-		auto result{ (vkCreateFramebuffer(p_context->device, &framebufferCreateInfo, nullptr, &swapChainFramebuffers[i])) };
+		auto result{ (vkCreateFramebuffer(p_context->gpuInfo.device, &framebufferCreateInfo, nullptr, &swapChainFramebuffers[i])) };
 		DJINN_VK_ASSERT(result);
 	}
 }
@@ -164,7 +164,7 @@ void Djinn::SwapChain::createFramebuffers(Context* p_context, VkImageView& color
 		framebufferCreateInfo.height = swapChainExtent.height;
 		framebufferCreateInfo.layers = 1;
 
-		auto result{ (vkCreateFramebuffer(p_context->device, &framebufferCreateInfo, nullptr, &swapChainFramebuffers[i])) };
+		auto result{ (vkCreateFramebuffer(p_context->gpuInfo.device, &framebufferCreateInfo, nullptr, &swapChainFramebuffers[i])) };
 		DJINN_VK_ASSERT(result);
 	}
 }
@@ -173,24 +173,24 @@ Djinn::SwapChainSupportDetails Djinn::querySwapChainSupport(Context* p_context)
 {
 	SwapChainSupportDetails details;
 
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(p_context->physicalDevice, p_context->surface, &details.capabilities);
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(p_context->gpuInfo.gpu, p_context->surface, &details.capabilities);
 
 	uint32_t formatCount;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(p_context->physicalDevice, p_context->surface, &formatCount, nullptr);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(p_context->gpuInfo.gpu, p_context->surface, &formatCount, nullptr);
 
 	if (formatCount != 0)
 	{
 		details.formats.resize(formatCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(p_context->physicalDevice, p_context->surface, &formatCount, details.formats.data());
+		vkGetPhysicalDeviceSurfaceFormatsKHR(p_context->gpuInfo.gpu, p_context->surface, &formatCount, details.formats.data());
 	}
 
 	uint32_t presentCount;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(p_context->physicalDevice, p_context->surface, &presentCount, nullptr);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(p_context->gpuInfo.gpu, p_context->surface, &presentCount, nullptr);
 
 	if (presentCount != 0)
 	{
 		details.presentModes.resize(presentCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(p_context->physicalDevice, p_context->surface, &presentCount, details.presentModes.data());
+		vkGetPhysicalDeviceSurfacePresentModesKHR(p_context->gpuInfo.gpu, p_context->surface, &presentCount, details.presentModes.data());
 	}
 
 	return details;

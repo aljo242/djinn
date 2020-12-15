@@ -134,18 +134,24 @@ void Djinn::Context::Init()
 	// only returns 0 if the device is NOT suitable
 	if (deviceCandidates.rbegin()->first > 0)
 	{
-		physicalDevice = deviceCandidates.rbegin()->second;
+		gpuInfo.gpu = deviceCandidates.rbegin()->second;
+		vkGetPhysicalDeviceMemoryProperties(gpuInfo.gpu, &gpuInfo.memProperties);
+		vkGetPhysicalDeviceProperties(gpuInfo.gpu, &gpuInfo.gpuProperties);
 		renderConfig.msaaSamples = getMaxUsableSampleCount();
 	}
 	else
 	{
 		throw std::runtime_error("Failed to find a suitable GPU");
 	}
+
+	// cache properties for later queries
+
+
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	// SET UP LOGICAL DEVICE
 
-	QueueFamilyIndices indices{ findQueueFamilies(physicalDevice, surface) };
+	QueueFamilyIndices indices{ findQueueFamilies(gpuInfo.gpu, surface) };
 
 	// if both queues have the same indices
 	std::set<uint32_t> uniqueQueueFamilies{ indices.graphicsFamily.value(), indices.presentFamily.value(), indices.transferFamily.value() };
@@ -185,7 +191,7 @@ void Djinn::Context::Init()
 		deviceCreateInfo.enabledLayerCount = 0;
 	}
 
-	result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device);
+	result = vkCreateDevice(gpuInfo.gpu, &deviceCreateInfo, nullptr, &gpuInfo.device);
 	DJINN_VK_ASSERT(result);
 }
 
@@ -206,7 +212,7 @@ void Djinn::Context::queryWindowSize()
 
 void Djinn::Context::CleanUp()
 {
-	vkDestroyDevice(device, nullptr);
+	vkDestroyDevice(gpuInfo.device, nullptr);
 
 	if constexpr (ENABLE_VALIDATION_LAYERS)
 	{
@@ -387,11 +393,8 @@ uint32_t Djinn::Context::rateDeviceSuitability(VkPhysicalDevice physicalDev)
 
 VkSampleCountFlagBits Djinn::Context::getMaxUsableSampleCount()
 {
-	VkPhysicalDeviceProperties physicalDeviceProperties;
-	vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
-
-	VkSampleCountFlags countFlags = physicalDeviceProperties.limits.framebufferColorSampleCounts &
-		physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+	const VkSampleCountFlags countFlags = gpuInfo.gpuProperties.limits.framebufferColorSampleCounts &
+		gpuInfo.gpuProperties.limits.framebufferDepthSampleCounts;
 
 	if (countFlags & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
 	else if (countFlags & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
@@ -401,7 +404,7 @@ VkSampleCountFlagBits Djinn::Context::getMaxUsableSampleCount()
 	else if (countFlags & VK_SAMPLE_COUNT_2_BIT) { return VK_SAMPLE_COUNT_2_BIT; }
 	else
 	{
-		return VK_SAMPLE_COUNT_1_BIT;
+ 		return VK_SAMPLE_COUNT_1_BIT;
 	}
 }
 

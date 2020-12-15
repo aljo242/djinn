@@ -18,6 +18,14 @@ namespace Djinn
 		VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT; // default to 1 sample
 	};
 
+	struct GPU_Info
+	{
+		VkPhysicalDevice gpu;
+		VkDevice device;
+		VkPhysicalDeviceMemoryProperties memProperties;
+		VkPhysicalDeviceProperties gpuProperties;
+	};
+
 	class Context
 	{
 	public:
@@ -52,6 +60,8 @@ namespace Djinn
 		VkPhysicalDevice physicalDevice{ VK_NULL_HANDLE };
 		VkDevice device{ VK_NULL_HANDLE };
 		VkSurfaceKHR surface{ VK_NULL_HANDLE };
+
+		GPU_Info gpuInfo{};
 
 	private:
 		DebugMessenger<DebugLevel::warning> debugMessenger{};
