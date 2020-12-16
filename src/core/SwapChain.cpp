@@ -1,4 +1,3 @@
-#include <array>
 
 #include "SwapChain.h"
 
@@ -7,6 +6,7 @@
 #include "RenderPass.h"
 //#include "../SwapChainSupportDetails.h"
 #include "../QueueFamilies.h"
+#include "../DjinnLib/Array.h"
 
 
 Djinn::SwapChain::SwapChain(Context* p_context)
@@ -43,14 +43,14 @@ void Djinn::SwapChain::Init(Context* p_context)
 
 	// TODO REVISIT imageSharingMode 
 	QueueFamilyIndices indices{ findQueueFamilies(p_context->gpuInfo.gpu, p_context->surface) };
-	std::array<uint32_t, 2> queueFamilyIndices{ indices.graphicsFamily.value(), indices.transferFamily.value() };
+	const Djinn::Array1D<uint32_t, 2> queueFamilyIndices{ indices.graphicsFamily.value(), indices.transferFamily.value() };
 
 	if (!indices.sameIndices())
 	{
 		sharingMode = VK_SHARING_MODE_CONCURRENT;
 		createInfo.imageSharingMode = sharingMode;
-		createInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
-		createInfo.pQueueFamilyIndices = queueFamilyIndices.data();
+		createInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.NumElem());
+		createInfo.pQueueFamilyIndices = queueFamilyIndices.Ptr();
 	}
 	else
 	{
@@ -121,7 +121,7 @@ void Djinn::SwapChain::createFramebuffers(Context* p_context, Image* colorImage,
 	for (size_t i = 0; i < swapChainImages.size(); ++i)
 	{
 		// the attachment for this buffer is the image view we already have created
-		std::array<VkImageView, 3> attachments = {
+		Djinn::Array1D<VkImageView, 3> attachments = {
 			colorImage->imageView,
 			depthImage->imageView,
 			swapChainImageViews[i]
@@ -130,8 +130,8 @@ void Djinn::SwapChain::createFramebuffers(Context* p_context, Image* colorImage,
 		VkFramebufferCreateInfo framebufferCreateInfo{};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferCreateInfo.renderPass = renderPass;
-		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		framebufferCreateInfo.pAttachments = attachments.data();
+		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.NumElem());
+		framebufferCreateInfo.pAttachments = attachments.Ptr();
 		framebufferCreateInfo.width = swapChainExtent.width;
 		framebufferCreateInfo.height = swapChainExtent.height;
 		framebufferCreateInfo.layers = 1;
@@ -149,7 +149,7 @@ void Djinn::SwapChain::createFramebuffers(Context* p_context, VkImageView& color
 	for (size_t i = 0; i < swapChainImages.size(); ++i)
 	{
 		// the attachment for this buffer is the image view we already have created
-		std::array<VkImageView, 3> attachments = {
+		Djinn::Array1D<VkImageView, 3> attachments = {
 			colorImageView,
 			depthImageView,
 			swapChainImageViews[i]
@@ -158,8 +158,8 @@ void Djinn::SwapChain::createFramebuffers(Context* p_context, VkImageView& color
 		VkFramebufferCreateInfo framebufferCreateInfo{};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferCreateInfo.renderPass = renderPass;
-		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		framebufferCreateInfo.pAttachments = attachments.data();
+		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.NumElem());
+		framebufferCreateInfo.pAttachments = attachments.Ptr();
 		framebufferCreateInfo.width = swapChainExtent.width;
 		framebufferCreateInfo.height = swapChainExtent.height;
 		framebufferCreateInfo.layers = 1;

@@ -265,12 +265,16 @@ void HelloTriangleApp::createRenderPass()
 	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-	std::array<VkAttachmentDescription, 3> attachments {colorAttachment, depthAttachment, colorAttachmentResolve};
+	//std::array<VkAttachmentDescription, 3> attachments {colorAttachment, depthAttachment, colorAttachmentResolve};
+	Djinn::Array1D<VkAttachmentDescription, 3> attachments{ colorAttachment, depthAttachment, colorAttachmentResolve };
+	//attachments[0] = colorAttachment;
+	//attachments[1] = depthAttachment;
+	//attachments[2] = colorAttachmentResolve;
 
 	VkRenderPassCreateInfo renderPassInfo{};
 	renderPassInfo.sType					= VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount			= static_cast<uint32_t>(attachments.size());
-	renderPassInfo.pAttachments				= attachments.data();
+	renderPassInfo.attachmentCount			= static_cast<uint32_t>(attachments.NumElem());
+	renderPassInfo.pAttachments				= attachments.Ptr();
 	renderPassInfo.subpassCount				= 1;
 	renderPassInfo.pSubpasses				= &subpass;
 	renderPassInfo.dependencyCount			= 1;
@@ -306,8 +310,8 @@ void HelloTriangleApp::createGraphicsPipeline()
 	vertexInputCreateInfo.sType							= VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
 	vertexInputCreateInfo.pVertexBindingDescriptions	= &bindingDescription;
-	vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-	vertexInputCreateInfo.pVertexAttributeDescriptions	= attributeDescriptions.data();
+	vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.NumElem());
+	vertexInputCreateInfo.pVertexAttributeDescriptions	= attributeDescriptions.Ptr();
 
 	// triangle list with no index buffer
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
@@ -909,12 +913,12 @@ void HelloTriangleApp::createDescriptorSetLayout()
 	samplerLayourBinding.pImmutableSamplers = nullptr;
 	samplerLayourBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	std::array<VkDescriptorSetLayoutBinding, 2> bindings {uboLayoutBinding, samplerLayourBinding};
+	Djinn::Array1D<VkDescriptorSetLayoutBinding, 2> bindings{ uboLayoutBinding, samplerLayourBinding };
 
 	VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
 	layoutCreateInfo.sType					= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutCreateInfo.bindingCount			= static_cast<uint32_t>(bindings.size());
-	layoutCreateInfo.pBindings				= bindings.data();
+	layoutCreateInfo.bindingCount			= static_cast<uint32_t>(bindings.NumElem());
+	layoutCreateInfo.pBindings				= bindings.Ptr();
 
 	auto result { (vkCreateDescriptorSetLayout(p_context->gpuInfo.device, &layoutCreateInfo, nullptr, &descriptorSetLayout))};
 	DJINN_VK_ASSERT(result);
@@ -999,7 +1003,7 @@ void HelloTriangleApp::createUniformBuffers()
 
 void HelloTriangleApp::createDescriptorPool()
 {
-	std::array<VkDescriptorPoolSize, 2> poolSizes{};
+	Djinn::Array1D<VkDescriptorPoolSize, 2> poolSizes;
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	poolSizes[0].descriptorCount = static_cast<uint32_t>(p_swapChain->swapChainImages.size());
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1007,8 +1011,8 @@ void HelloTriangleApp::createDescriptorPool()
 
 	VkDescriptorPoolCreateInfo poolCreateInfo{};
 	poolCreateInfo.sType								= VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolCreateInfo.poolSizeCount						= static_cast<uint32_t>(poolSizes.size());
-	poolCreateInfo.pPoolSizes							= poolSizes.data();
+	poolCreateInfo.poolSizeCount						= static_cast<uint32_t>(poolSizes.NumElem());
+	poolCreateInfo.pPoolSizes							= poolSizes.Ptr();
 	poolCreateInfo.maxSets								= static_cast<uint32_t>(p_swapChain->swapChainImages.size());
 
 	auto result { (vkCreateDescriptorPool(p_context->gpuInfo.device, &poolCreateInfo, nullptr, &descriptorPool))};
@@ -1042,6 +1046,8 @@ void HelloTriangleApp::createDescriptorSets()
 		imageInfo.sampler = textureSampler;
 
 		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+		//Djinn::Array1D<VkWriteDescriptorSet, 2> descriptorWrites;
+		//VkWriteDescriptorSet descriptorWrites[2];
 
 		descriptorWrites[0].sType						= VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptorWrites[0].dstSet						= descriptorSets[i];
@@ -1063,7 +1069,10 @@ void HelloTriangleApp::createDescriptorSets()
  		descriptorWrites[1].pImageInfo = &imageInfo; 
 		descriptorWrites[1].pTexelBufferView = nullptr; // opt
 
-		vkUpdateDescriptorSets(p_context->gpuInfo.device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+		//constexpr uint32_t descriptorSize = static_cast<uint32_t>(descriptorWrites.NumElem());
+		const auto p = descriptorWrites.data();
+
+		vkUpdateDescriptorSets(p_context->gpuInfo.device, descriptorWrites.size(), p, 0, nullptr);
 	}
 }
 
@@ -1091,8 +1100,8 @@ void HelloTriangleApp::updateUniformBuffer(const uint32_t imageIndex)
 void HelloTriangleApp::createBuffer(const VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
 	VkBuffer& buffer, VkDeviceMemory& bufferMemory, const VkDeviceSize offset)
 {
-	QueueFamilyIndices queueFamilyIndices{ findQueueFamilies(p_context->gpuInfo.gpu, p_context->surface) };
-	std::array<uint32_t, 2> queueFamilies{ queueFamilyIndices.graphicsFamily.value(), queueFamilyIndices.transferFamily.value() };
+	const QueueFamilyIndices queueFamilyIndices{ findQueueFamilies(p_context->gpuInfo.gpu, p_context->surface) };
+	const Djinn::Array1D<uint32_t, 2> queueFamilies{ queueFamilyIndices.graphicsFamily.value(), queueFamilyIndices.transferFamily.value() };
 
 	VkBufferCreateInfo bufferCreateInfo{};
 	bufferCreateInfo.sType					= VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -1100,8 +1109,8 @@ void HelloTriangleApp::createBuffer(const VkDeviceSize size, VkBufferUsageFlags 
 	bufferCreateInfo.usage					= usage;
 	// currently always want concurrent usage because we want graphics, transfer queues to have access
 	bufferCreateInfo.sharingMode			= p_swapChain->sharingMode;
-	bufferCreateInfo.queueFamilyIndexCount	= static_cast<uint32_t>(queueFamilies.size());
-	bufferCreateInfo.pQueueFamilyIndices	= queueFamilies.data();
+	bufferCreateInfo.queueFamilyIndexCount	= static_cast<uint32_t>(queueFamilies.NumElem());
+	bufferCreateInfo.pQueueFamilyIndices	= queueFamilies.Ptr();
 
 	auto result {vkCreateBuffer(p_context->gpuInfo.device, &bufferCreateInfo, nullptr, &buffer)};
 	DJINN_VK_ASSERT(result);
@@ -1156,7 +1165,7 @@ uint32_t HelloTriangleApp::findMemoryType(uint32_t typeFilter, VkMemoryPropertyF
 void HelloTriangleApp::createCommandBuffers()
 {
 	// create clear values
-	std::array<VkClearValue, 2> clearValues{};
+	Djinn::Array1D<VkClearValue, 2> clearValues;
 	clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
 	clearValues[1].depthStencil = {1.0f, 0};
 
@@ -1193,8 +1202,8 @@ void HelloTriangleApp::createCommandBuffers()
 		renderPassInfo.renderArea.offset				= {0, 0};	
 		renderPassInfo.renderArea.extent				= p_swapChain->swapChainExtent;
 
-		renderPassInfo.clearValueCount					= static_cast<uint32_t>(clearValues.size());
-		renderPassInfo.pClearValues						= clearValues.data();
+		renderPassInfo.clearValueCount					= static_cast<uint32_t>(clearValues.NumElem());
+		renderPassInfo.pClearValues						= clearValues.Ptr();
 
 		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
