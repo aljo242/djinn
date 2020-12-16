@@ -38,8 +38,8 @@ void Djinn::SwapChain::Init(Context* p_context)
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
 	createInfo.imageExtent = extent;
 	createInfo.imageArrayLayers = 1; // specify more if doing stereoscopic 3D
-	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	// use VK_IMAGE_USAGE_TRANSFER_DST_BIT if post-processing steps desired
+	// image transfer bit for potential for post-processing
+	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT; 
 
 	// TODO REVISIT imageSharingMode 
 	QueueFamilyIndices indices{ findQueueFamilies(p_context->gpuInfo.gpu, p_context->surface) };
@@ -199,7 +199,6 @@ Djinn::SwapChainSupportDetails Djinn::querySwapChainSupport(Context* p_context)
 Djinn::SwapChainSupportDetails Djinn::querySwapChainSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
 {
 	SwapChainSupportDetails details;
-
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities);
 
 	uint32_t formatCount;
@@ -245,11 +244,13 @@ VkSurfaceFormatKHR Djinn::chooseSwapChainFormat(const std::vector<VkSurfaceForma
 
 VkPresentModeKHR Djinn::chooseSwapChainPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes)
 {
+	const VkPresentModeKHR desiredPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+
 	for (const auto& availablePresentMode : availablePresentModes)
 	{
 		// allows us to create "triple buffering" schemes
 		// may want to use immediate
-		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+		if (availablePresentMode == desiredPresentMode)
 		{
 			return availablePresentMode;
 		}
