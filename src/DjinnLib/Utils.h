@@ -20,13 +20,13 @@ namspace Djinn
 	template<std::unsigned_integral UINT_T>
 	constexpr UINT_T SIZE_MB(const UINT_T uint_t)
 	{
-		return (static_cast<UINT_T>((SIZE_KB(uint_t)+1023) / 1024);
+		return (static_cast<UINT_T>((SIZE_KB(uint_t) + 1023) / 1024);
 	}
 
 	template<std::unsigned_integral UINT_T>
 	constexpr UINT_T SIZE_GB(const UINT_T uint_t)
 	{
-		return (static_cast<UINT_T>((SIZE_MB(uint_t)+1023) / 1024);
+		return (static_cast<UINT_T>((SIZE_MB(uint_t) + 1023) / 1024);
 	}
 
 }

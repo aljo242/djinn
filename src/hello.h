@@ -149,13 +149,7 @@ private:
 	void createSyncObjects();
 	void drawFrame();
 
-	static void framebufferResizedCallback(GLFWwindow* window, const int width, const int height)
-	{
-		DJINN_UNUSED(width);
-		DJINN_UNUSED(height);
-		auto app{ reinterpret_cast<HelloTriangleApp*>(glfwGetWindowUserPointer(window)) };
-		app->framebufferResized = true;
-	}
+
 
 private:
 

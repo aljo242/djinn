@@ -1072,7 +1072,7 @@ void HelloTriangleApp::createDescriptorSets()
 		//constexpr uint32_t descriptorSize = static_cast<uint32_t>(descriptorWrites.NumElem());
 		const auto p = descriptorWrites.data();
 
-		vkUpdateDescriptorSets(p_context->gpuInfo.device, descriptorWrites.size(), p, 0, nullptr);
+		vkUpdateDescriptorSets(p_context->gpuInfo.device, static_cast<uint32_t>(descriptorWrites.size()), p, 0, nullptr);
 	}
 }
 
