@@ -6,23 +6,23 @@
 namespace Djinn
 {
 
-	class Instance;
+	class Context;
 	class RenderPass;
 	class Image;
 
 	class SwapChain
 	{
 	public:
-		SwapChain(Instance* p_instance);
-		void Init(Instance* p_instance);
-		void CleanUp(Instance* p_instance);
-		void createFramebuffers(Instance* p_instance, VkImageView& colorImageView, VkImageView& depthImageView, VkRenderPass& renderPass);
-		void createFramebuffers(Instance* p_instance, Image* colorImage, Image* depthImage, VkRenderPass& renderPass);
+		SwapChain(Context* p_context);
+		void Init(Context* p_context);
+		void CleanUp(Context* p_context);
+		void createFramebuffers(Context* p_context, VkImageView& colorImageView, VkImageView& depthImageView, VkRenderPass& renderPass);
+		void createFramebuffers(Context* p_context, Image* colorImage, Image* depthImage, VkRenderPass& renderPass);
 
 
 	private:
-		void createSwapChainImages(Instance* p_instance);
-		void createSwapChainImageViews(Instance* p_instance);
+		void createSwapChainImages(Context* p_context);
+		void createSwapChainImageViews(Context* p_context);
 
 
 	public:
@@ -47,7 +47,7 @@ namespace Djinn
 	};
 
 	// use Physical Device and Surface to query support for swapchains
-	SwapChainSupportDetails querySwapChainSupport(Instance* p_instance);
+	SwapChainSupportDetails querySwapChainSupport(Context* p_context);
 	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 
 	// choose swapchain capabilities
@@ -55,7 +55,7 @@ namespace Djinn
 	// TODO change to probably use another present mode
 	VkPresentModeKHR chooseSwapChainPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes);
 	// Swap Chain Extent is the resolution of the swap chain buffer image
-	VkExtent2D chooseSwapChainExtent(Instance* p_instance, const VkSurfaceCapabilitiesKHR& capabilities);
+	VkExtent2D chooseSwapChainExtent(Context* p_context, const VkSurfaceCapabilitiesKHR& capabilities);
 
 }
 

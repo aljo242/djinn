@@ -17,12 +17,14 @@
 #include "core/Image.h"
 #include <vulkan/vulkan.h>
 
+#include "DjinnLib/Array.h"
+
 
 constexpr uint32_t MAX_FRAMES_IN_FLIGHT{ 2 };
 
 namespace Djinn 
 {
-	class Instance;
+	class Context;
 	class SwapChain;
 }
 
@@ -42,9 +44,10 @@ struct Vertex
 		return bindingDescription;
 	}
 
-	static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
+	static Djinn::Array1D<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
 	{
-		std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+		Djinn::Array1D<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+
 		attributeDescriptions[0].binding = 0;
 		attributeDescriptions[0].location = 0;
 		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -146,17 +149,11 @@ private:
 	void createSyncObjects();
 	void drawFrame();
 
-	static void framebufferResizedCallback(GLFWwindow* window, const int width, const int height)
-	{
-		DJINN_UNUSED(width);
-		DJINN_UNUSED(height);
-		auto app{ reinterpret_cast<HelloTriangleApp*>(glfwGetWindowUserPointer(window)) };
-		app->framebufferResized = true;
-	}
+
 
 private:
 
-	Djinn::Instance* p_instance{ nullptr };
+	Djinn::Context* p_context{ nullptr };
 	Djinn::SwapChain* p_swapChain{ nullptr };
 
 	VkQueue graphicsQueue							{ VK_NULL_HANDLE };
@@ -173,9 +170,10 @@ private:
 	std::vector<VkCommandBuffer> commandBuffers;
 
 	// synchronization
-	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores;
-	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
-	std::array<VkFence, MAX_FRAMES_IN_FLIGHT> inFlightFences;
+	Djinn::Array1D<VkSemaphore, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores;
+	Djinn::Array1D<VkSemaphore, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
+	Djinn::Array1D<VkFence, MAX_FRAMES_IN_FLIGHT> inFlightFences;
+
 	std::vector<VkFence> imagesInFlight;
 	size_t currentFrame{ 0 };
 

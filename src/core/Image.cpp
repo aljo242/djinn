@@ -2,21 +2,21 @@
 #include "Memory.h"
 
 
-Djinn::Image::Image(Instance* p_instance, const ImageCreateInfo& createInfo)
+Djinn::Image::Image(Context* p_context, const ImageCreateInfo& createInfo)
 {
-	Init(p_instance, createInfo);
+	Init(p_context, createInfo);
 }
 
 Djinn::Image::Image() {}
 
-void Djinn::Image::CleanUp(Instance* p_instance)
+void Djinn::Image::CleanUp(Context* p_context)
 {
-	vkDestroyImageView(p_instance->device, imageView, nullptr);
-	vkDestroyImage(p_instance->device, image, nullptr);
-	vkFreeMemory(p_instance->device, imageMemory, nullptr);
+	vkDestroyImageView(p_context->gpuInfo.device, imageView, nullptr);
+	vkDestroyImage(p_context->gpuInfo.device, image, nullptr);
+	vkFreeMemory(p_context->gpuInfo.device, imageMemory, nullptr);
 }
 
-void Djinn::Image::Init(Instance* p_instance, const ImageCreateInfo& createInfo)
+void Djinn::Image::Init(Context* p_context, const ImageCreateInfo& createInfo)
 {
 	VkImageCreateInfo imageCreateInfo{};
 	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -34,24 +34,24 @@ void Djinn::Image::Init(Instance* p_instance, const ImageCreateInfo& createInfo)
 	imageCreateInfo.samples = createInfo.numSamples;
 	imageCreateInfo.flags = 0; // opt
 
-	auto result{ vkCreateImage(p_instance->device, &imageCreateInfo, nullptr, &image) };
+	auto result{ vkCreateImage(p_context->gpuInfo.device, &imageCreateInfo, nullptr, &image) };
 	DJINN_VK_ASSERT(result);
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////
 	// ALLOCATE IMAGE MEM
 
 	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(p_instance->device, image, &memRequirements);
+	vkGetImageMemoryRequirements(p_context->gpuInfo.device, image, &memRequirements);
 
 	VkMemoryAllocateInfo allocateInfo{};
 	allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocateInfo.allocationSize = memRequirements.size;
-	allocateInfo.memoryTypeIndex = findMemoryType(p_instance, memRequirements.memoryTypeBits, createInfo.memoryFlags);
+	allocateInfo.memoryTypeIndex = findMemoryType(p_context, memRequirements.memoryTypeBits, createInfo.memoryFlags);
 
-	result = vkAllocateMemory(p_instance->device, &allocateInfo, nullptr, &imageMemory);
+	result = vkAllocateMemory(p_context->gpuInfo.device, &allocateInfo, nullptr, &imageMemory);
 	DJINN_VK_ASSERT(result);
 
-	vkBindImageMemory(p_instance->device, image, imageMemory, 0);
+	vkBindImageMemory(p_context->gpuInfo.device, image, imageMemory, 0);
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////
 	// CREATE IMAGE VIEW
@@ -67,11 +67,11 @@ void Djinn::Image::Init(Instance* p_instance, const ImageCreateInfo& createInfo)
 	viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 	viewCreateInfo.subresourceRange.layerCount = 1;
 
-	result = vkCreateImageView(p_instance->device, &viewCreateInfo, nullptr, &imageView);
+	result = vkCreateImageView(p_context->gpuInfo.device, &viewCreateInfo, nullptr, &imageView);
 	DJINN_VK_ASSERT(result);
 }
 
-void Djinn::createImage(Instance* p_instance, SwapChain* p_swapChain, const uint32_t width, const uint32_t height, const uint32_t mipLevels, const VkFormat format, const VkSampleCountFlagBits numSamples, const VkImageTiling tiling, const VkImageUsageFlags flags, const VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
+void Djinn::createImage(Context* p_context, SwapChain* p_swapChain, const uint32_t width, const uint32_t height, const uint32_t mipLevels, const VkFormat format, const VkSampleCountFlagBits numSamples, const VkImageTiling tiling, const VkImageUsageFlags flags, const VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
 {
 	VkImageCreateInfo imageCreateInfo{};
 	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -89,25 +89,25 @@ void Djinn::createImage(Instance* p_instance, SwapChain* p_swapChain, const uint
 	imageCreateInfo.samples = numSamples;
 	imageCreateInfo.flags = 0; // opt
 
-	auto result{ vkCreateImage(p_instance->device, &imageCreateInfo, nullptr, &image) };
+	auto result{ vkCreateImage(p_context->gpuInfo.device, &imageCreateInfo, nullptr, &image) };
 	DJINN_VK_ASSERT(result);
 
 	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(p_instance->device, image, &memRequirements);
+	vkGetImageMemoryRequirements(p_context->device, image, &memRequirements);
 
 	VkMemoryAllocateInfo allocateInfo{};
 	allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocateInfo.allocationSize = memRequirements.size;
-	allocateInfo.memoryTypeIndex = findMemoryType(p_instance, memRequirements.memoryTypeBits, properties);
+	allocateInfo.memoryTypeIndex = findMemoryType(p_context, memRequirements.memoryTypeBits, properties);
 
-	result = vkAllocateMemory(p_instance->device, &allocateInfo, nullptr, &imageMemory);
+	result = vkAllocateMemory(p_context->gpuInfo.device, &allocateInfo, nullptr, &imageMemory);
 	DJINN_VK_ASSERT(result);
 
-	result = vkBindImageMemory(p_instance->device, image, imageMemory, 0);
+	result = vkBindImageMemory(p_context->gpuInfo.device, image, imageMemory, 0);
 	DJINN_VK_ASSERT(result);
 }
 
-VkImageView Djinn::createImageView(Instance* p_instance, const VkImage image, const VkFormat format, const VkImageAspectFlags aspectFlags, const uint32_t mipLevels)
+VkImageView Djinn::createImageView(Context* p_context, const VkImage image, const VkFormat format, const VkImageAspectFlags aspectFlags, const uint32_t mipLevels)
 {
 	VkImageView imageView;
 
@@ -122,7 +122,7 @@ VkImageView Djinn::createImageView(Instance* p_instance, const VkImage image, co
 	viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 	viewCreateInfo.subresourceRange.layerCount = 1;
 
-	auto result{ vkCreateImageView(p_instance->device, &viewCreateInfo, nullptr, &imageView) };
+	auto result{ vkCreateImageView(p_context->gpuInfo.device, &viewCreateInfo, nullptr, &imageView) };
 	DJINN_VK_ASSERT(result);
 
 	return imageView;
