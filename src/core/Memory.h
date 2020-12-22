@@ -4,7 +4,7 @@
 #include "../ext_inc.h"
 #include "Context.h"
 #include "../DjinnLib/Types.h"
-#include "Array.h"
+#include "../DjinnLib/Array.h"
 #include <vector>
 
 namespace Djinn

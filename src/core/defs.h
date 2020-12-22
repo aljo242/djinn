@@ -16,6 +16,10 @@ constexpr bool ENABLE_VALIDATION_LAYERS{ true };
 constexpr bool ENABLE_VALIDATION_LAYERS{ false };
 #endif
 
+// #define IMGUI_UNLIMITED_FRAME_RATE
+#if defined(_DEBUG)
+#define IMGUI_VULKAN_DEBUG_REPORT
+#endif
 
 const std::string APP_NAME{ "Hello Triangle" };
 constexpr uint32_t APP_VERSION{ VK_MAKE_VERSION(1, 0, 0) };

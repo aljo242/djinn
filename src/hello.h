@@ -16,6 +16,9 @@
 #include "core/core.h"
 #include "core/Image.h"
 #include <vulkan/vulkan.h>
+#include "external/imgui/imgui.h"
+#include "external/imgui/backends/imgui_impl_vulkan.h"
+#include "external/imgui/backends/imgui_impl_glfw.h"
 
 #include "DjinnLib/Array.h"
 
@@ -148,6 +151,7 @@ private:
 	void createCommandBuffers();
 	void createSyncObjects();
 	void drawFrame();
+	void initImGui();
 
 
 
@@ -155,6 +159,8 @@ private:
 
 	Djinn::Context* p_context{ nullptr };
 	Djinn::SwapChain* p_swapChain{ nullptr };
+
+	ImGui_ImplVulkanH_Window g_MainWindowData;
 
 	VkQueue graphicsQueue							{ VK_NULL_HANDLE };
 	VkQueue presentQueue							{ VK_NULL_HANDLE };

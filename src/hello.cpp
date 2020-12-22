@@ -1,5 +1,5 @@
 #include "hello.h"
-#include "core/Instance.h"
+#include "core/Context.h"
 #include "core/SwapChain.h"
 #include "core/Image.h"
 #include "core/defs.h"
@@ -21,7 +21,7 @@ HelloTriangleApp::HelloTriangleApp()
 
 HelloTriangleApp::~HelloTriangleApp()
 {
-	delete p_instance;
+	delete p_context;
 }
 
 void HelloTriangleApp::run()
@@ -33,17 +33,17 @@ void HelloTriangleApp::run()
 
 void HelloTriangleApp::initVulkan()
 {
-	p_instance = new Djinn::Instance();
-	p_instance->Init();
-	auto indices{ findQueueFamilies(p_instance->physicalDevice, p_instance->surface) };
+	p_context = new Djinn::Context();
+	p_context->Init();
+	const auto indices = p_context->queueFamilyIndices;
 
-	vkGetDeviceQueue(p_instance->device, indices.graphicsFamily.value(), 0, &graphicsQueue);
-	vkGetDeviceQueue(p_instance->device, indices.presentFamily.value(), 0, &presentQueue);
-	vkGetDeviceQueue(p_instance->device, indices.transferFamily.value(), 0, &transferQueue);
+	vkGetDeviceQueue(p_context->gpuInfo.device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+	vkGetDeviceQueue(p_context->gpuInfo.device, indices.presentFamily.value(), 0, &presentQueue);
+	vkGetDeviceQueue(p_context->gpuInfo.device, indices.transferFamily.value(), 0, &transferQueue);
 
-	msaaSamples = p_instance->renderConfig.msaaSamples;
+	msaaSamples = p_context->renderConfig.msaaSamples;
 
-	p_swapChain = new Djinn::SwapChain(p_instance);
+	p_swapChain = new Djinn::SwapChain(p_context);
 
 	createRenderPass();			//
 	createDescriptorSetLayout();//
@@ -51,7 +51,7 @@ void HelloTriangleApp::initVulkan()
 	createColorResources();     //
 	createDepthResources();		//
 	//createFramebuffers();		//
-	p_swapChain->createFramebuffers(p_instance, &colorImage, &depthImage, renderPass);
+	p_swapChain->createFramebuffers(p_context, &colorImage, &depthImage, renderPass);
 	createCommandPool();		//
 	createTextureImage();		// 
 	createTextureImageView();	//
@@ -68,7 +68,7 @@ void HelloTriangleApp::initVulkan()
 
 void HelloTriangleApp::mainLoop()
 {
-	while (!glfwWindowShouldClose(p_instance->window))
+	while (!glfwWindowShouldClose(p_context->window))
 	{
 		glfwPollEvents();
 		drawFrame();
@@ -78,51 +78,51 @@ void HelloTriangleApp::mainLoop()
 void HelloTriangleApp::cleanup()
 {
 	// wait for the device to not be "mid-work" before we destroy objects
-	vkDeviceWaitIdle(p_instance->device);
+	vkDeviceWaitIdle(p_context->gpuInfo.device);
 
 	//cleanupSwapChain();
-	vkDestroyPipelineLayout(p_instance->device, pipelineLayout, nullptr);
-	vkDestroyPipeline(p_instance->device, graphicsPipeline, nullptr);
-	vkDestroyRenderPass(p_instance->device, renderPass, nullptr);
+	vkDestroyPipelineLayout(p_context->gpuInfo.device, pipelineLayout, nullptr);
+	vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline, nullptr);
+	vkDestroyRenderPass(p_context->gpuInfo.device, renderPass, nullptr);
 
 	for (size_t i = 0; i < p_swapChain->swapChainImages.size(); ++i)
 	{
-			vkDestroyBuffer(p_instance->device, uniformBuffers[i], nullptr);
-			vkFreeMemory(p_instance->device, uniformBuffersMemory[i], nullptr);
+			vkDestroyBuffer(p_context->gpuInfo.device, uniformBuffers[i], nullptr);
+			vkFreeMemory(p_context->gpuInfo.device, uniformBuffersMemory[i], nullptr);
 	}
 
-	colorImage.CleanUp(p_instance);
-	depthImage.CleanUp(p_instance);
+	colorImage.CleanUp(p_context);
+	depthImage.CleanUp(p_context);
 
-	vkDestroyDescriptorPool(p_instance->device, descriptorPool, nullptr);
+	vkDestroyDescriptorPool(p_context->gpuInfo.device, descriptorPool, nullptr);
 
-	vkDestroySampler(p_instance->device, textureSampler, nullptr);
-	vkDestroyImageView(p_instance->device, textureImageView, nullptr);
+	vkDestroySampler(p_context->gpuInfo.device, textureSampler, nullptr);
+	vkDestroyImageView(p_context->gpuInfo.device, textureImageView, nullptr);
 
-	vkDestroyDescriptorSetLayout(p_instance->device, descriptorSetLayout, nullptr);
+	vkDestroyDescriptorSetLayout(p_context->gpuInfo.device, descriptorSetLayout, nullptr);
 
-	vkDestroyBuffer(p_instance->device, vertexBuffer, nullptr);
-	vkFreeMemory(p_instance->device, vertexBufferMemory, nullptr);
-	vkDestroyBuffer(p_instance->device, indexBuffer, nullptr);
-	vkFreeMemory(p_instance->device, indexBufferMemory, nullptr);
-	vkDestroyImage(p_instance->device, textureImage, nullptr);
-	vkFreeMemory(p_instance->device, textureImageMemory, nullptr);
+	vkDestroyBuffer(p_context->gpuInfo.device, vertexBuffer, nullptr);
+	vkFreeMemory(p_context->gpuInfo.device, vertexBufferMemory, nullptr);
+	vkDestroyBuffer(p_context->gpuInfo.device, indexBuffer, nullptr);
+	vkFreeMemory(p_context->gpuInfo.device, indexBufferMemory, nullptr);
+	vkDestroyImage(p_context->gpuInfo.device, textureImage, nullptr);
+	vkFreeMemory(p_context->gpuInfo.device, textureImageMemory, nullptr);
 
-	p_swapChain->CleanUp(p_instance);
+	p_swapChain->CleanUp(p_context);
 
 
 	// destroy sync objects
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 	{
-		vkDestroySemaphore(p_instance->device, renderFinishedSemaphores[i], nullptr);
-		vkDestroySemaphore(p_instance->device, imageAvailableSemaphores[i], nullptr);
-		vkDestroyFence(p_instance->device, inFlightFences[i], nullptr);
+		vkDestroySemaphore(p_context->gpuInfo.device, renderFinishedSemaphores[i], nullptr);
+		vkDestroySemaphore(p_context->gpuInfo.device, imageAvailableSemaphores[i], nullptr);
+		vkDestroyFence(p_context->gpuInfo.device, inFlightFences[i], nullptr);
 	}
 
-	vkDestroyCommandPool(p_instance->device, gfxCommandPool, nullptr);
-	vkDestroyCommandPool(p_instance->device, transferCommandPool, nullptr);
+	vkDestroyCommandPool(p_context->gpuInfo.device, gfxCommandPool, nullptr);
+	vkDestroyCommandPool(p_context->gpuInfo.device, transferCommandPool, nullptr);
 
-	p_instance->CleanUp();
+	p_context->CleanUp();
 }
 
 VkFormat HelloTriangleApp::findSupportedFormat(const std::vector<VkFormat>& candidates, const VkImageTiling tiling, const VkFormatFeatureFlags features)
@@ -130,7 +130,7 @@ VkFormat HelloTriangleApp::findSupportedFormat(const std::vector<VkFormat>& cand
 	for (const auto& format : candidates)
 	{
 		VkFormatProperties props;
-		vkGetPhysicalDeviceFormatProperties(p_instance->physicalDevice, format, &props);
+		vkGetPhysicalDeviceFormatProperties(p_context->gpuInfo.gpu, format, &props);
 
 		if ((tiling == VK_IMAGE_TILING_LINEAR) && (props.linearTilingFeatures & features) == features)
 		{
@@ -163,37 +163,37 @@ bool HelloTriangleApp::hasStencilComponent(const VkFormat format)
 
 void HelloTriangleApp::cleanupSwapChain()
 {
-	p_swapChain->CleanUp(p_instance);
+	p_swapChain->CleanUp(p_context);
 
 
-	vkFreeCommandBuffers(p_instance->device, gfxCommandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-	vkDestroyPipeline(p_instance->device, graphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(p_instance->device, pipelineLayout, nullptr);
-	vkDestroyRenderPass(p_instance->device, renderPass, nullptr);
+	vkFreeCommandBuffers(p_context->gpuInfo.device, gfxCommandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+	vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline, nullptr);
+	vkDestroyPipelineLayout(p_context->gpuInfo.device, pipelineLayout, nullptr);
+	vkDestroyRenderPass(p_context->gpuInfo.device, renderPass, nullptr);
 
-	colorImage.CleanUp(p_instance);
-	depthImage.CleanUp(p_instance);
+	colorImage.CleanUp(p_context);
+	depthImage.CleanUp(p_context);
 
-	vkDestroyDescriptorPool(p_instance->device, descriptorPool, nullptr);
+	vkDestroyDescriptorPool(p_context->gpuInfo.device, descriptorPool, nullptr);
 
 }
 
 void HelloTriangleApp::recreateSwapChain()
 {
 	// check the size 
-	p_instance->queryWindowSize();
+	p_context->queryWindowSize();
 
-	vkDeviceWaitIdle(p_instance->device);
+	vkDeviceWaitIdle(p_context->gpuInfo.device);
 
 	cleanupSwapChain();
 
 	// re-init
-	p_swapChain->Init(p_instance);
+	p_swapChain->Init(p_context);
 	createRenderPass();
 	createGraphicsPipeline();
 	createColorResources();
 	createDepthResources();
-	p_swapChain->createFramebuffers(p_instance, &colorImage, &depthImage, renderPass);
+	p_swapChain->createFramebuffers(p_context, &colorImage, &depthImage, renderPass);
 	createDescriptorPool();		//
 	createDescriptorSets();		//
 	createCommandBuffers();
@@ -275,14 +275,14 @@ void HelloTriangleApp::createRenderPass()
 	renderPassInfo.dependencyCount			= 1;
 	renderPassInfo.pDependencies			= &dependency;
 
-	auto result {(vkCreateRenderPass(p_instance->device, &renderPassInfo, nullptr, &renderPass))};
+	auto result {(vkCreateRenderPass(p_context->gpuInfo.device, &renderPassInfo, nullptr, &renderPass))};
 	DJINN_VK_ASSERT(result);
 }
 
 void HelloTriangleApp::createGraphicsPipeline()
 {
-	ShaderLoader vertShader("shader/vert.spv", p_instance->device);
-	ShaderLoader fragShader("shader/frag.spv", p_instance->device);
+	ShaderLoader vertShader("shader/vert.spv", p_context->gpuInfo.device);
+	ShaderLoader fragShader("shader/frag.spv", p_context->gpuInfo.device);
 
 	VkPipelineShaderStageCreateInfo vertShaderStageCreateInfo{};
 	vertShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -305,8 +305,8 @@ void HelloTriangleApp::createGraphicsPipeline()
 	vertexInputCreateInfo.sType							= VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
 	vertexInputCreateInfo.pVertexBindingDescriptions	= &bindingDescription;
-	vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-	vertexInputCreateInfo.pVertexAttributeDescriptions	= attributeDescriptions.data();
+	vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.NumElem());
+	vertexInputCreateInfo.pVertexAttributeDescriptions	= attributeDescriptions.Ptr();
 
 	// triangle list with no index buffer
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
@@ -410,7 +410,7 @@ void HelloTriangleApp::createGraphicsPipeline()
 	pipelineLayoutInfo.pushConstantRangeCount			= 0;					// Optional
 	pipelineLayoutInfo.pPushConstantRanges				= nullptr;				// Optional
 
-	auto result {(vkCreatePipelineLayout(p_instance->device, &pipelineLayoutInfo, nullptr, &pipelineLayout))};
+	auto result {(vkCreatePipelineLayout(p_context->gpuInfo.device, &pipelineLayoutInfo, nullptr, &pipelineLayout))};
 	DJINN_VK_ASSERT(result);
 
 	VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
@@ -432,29 +432,29 @@ void HelloTriangleApp::createGraphicsPipeline()
 	pipelineCreateInfo.basePipelineHandle				= VK_NULL_HANDLE;		// Optional
 	pipelineCreateInfo.basePipelineIndex				= -1;					// Optional
 
-	result = (vkCreateGraphicsPipelines(p_instance->device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &graphicsPipeline));
+	result = (vkCreateGraphicsPipelines(p_context->gpuInfo.device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &graphicsPipeline));
 	DJINN_VK_ASSERT(result);
 }
 
 
 void HelloTriangleApp::createCommandPool()
 {
-	QueueFamilyIndices queueFamilyIndices				{findQueueFamilies(p_instance->physicalDevice, p_instance->surface)};
+	//QueueFamilyIndices queueFamilyIndices				{findQueueFamilies(p_context->physicalDevice, p_context->surface)};
 
 	VkCommandPoolCreateInfo poolCreateInfo{};
 	poolCreateInfo.sType								= VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolCreateInfo.queueFamilyIndex						= queueFamilyIndices.graphicsFamily.value();
+	poolCreateInfo.queueFamilyIndex						= p_context->queueFamilyIndices.graphicsFamily.value();
 	poolCreateInfo.flags								= 0;	// Optional
 
-	auto result {(vkCreateCommandPool(p_instance->device, &poolCreateInfo, nullptr, &gfxCommandPool))};
+	auto result {(vkCreateCommandPool(p_context->gpuInfo.device, &poolCreateInfo, nullptr, &gfxCommandPool))};
 	DJINN_VK_ASSERT(result);
 
-	poolCreateInfo.queueFamilyIndex = queueFamilyIndices.transferFamily.value();
+	poolCreateInfo.queueFamilyIndex = p_context->queueFamilyIndices.transferFamily.value();
 
 	// transfer commands are short-lived, so this hint could lead to allocation optimizations
 	poolCreateInfo.flags								= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 
-	result = (vkCreateCommandPool(p_instance->device, &poolCreateInfo, nullptr, &transferCommandPool));
+	result = (vkCreateCommandPool(p_context->gpuInfo.device, &poolCreateInfo, nullptr, &transferCommandPool));
 	DJINN_VK_ASSERT(result);
 }
 
@@ -475,7 +475,7 @@ void HelloTriangleApp::createDepthResources()
 	createInfo.sharingMode = p_swapChain->sharingMode;
 	createInfo.numSamples = msaaSamples;
 
-	depthImage.Init(p_instance, createInfo);
+	depthImage.Init(p_context, createInfo);
 }
 
 void HelloTriangleApp::createTextureImage()
@@ -497,9 +497,9 @@ void HelloTriangleApp::createTextureImage()
 		VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory, 0);
 
 	void* data;
-	vkMapMemory(p_instance->device, stagingBufferMemory, 0, imageSize, 0, &data);
+	vkMapMemory(p_context->gpuInfo.device, stagingBufferMemory, 0, imageSize, 0, &data);
 		memcpy(data, pixels, static_cast<size_t>(imageSize));
-	vkUnmapMemory(p_instance->device, stagingBufferMemory);
+	vkUnmapMemory(p_context->gpuInfo.device, stagingBufferMemory);
 
 	stbi_image_free(pixels);
 
@@ -513,8 +513,8 @@ void HelloTriangleApp::createTextureImage()
 	copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 	//transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_mipLevels);
 
-	vkDestroyBuffer(p_instance->device, stagingBuffer, nullptr);
-	vkFreeMemory(p_instance->device, stagingBufferMemory, nullptr);
+	vkDestroyBuffer(p_context->gpuInfo.device, stagingBuffer, nullptr);
+	vkFreeMemory(p_context->gpuInfo.device, stagingBufferMemory, nullptr);
 
 	generateMipMaps(textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, m_mipLevels);
 
@@ -535,7 +535,7 @@ VkImageView HelloTriangleApp::createImageView(const VkImage image, const VkForma
 	viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 	viewCreateInfo.subresourceRange.layerCount = 1;
 
-	auto result{ vkCreateImageView(p_instance->device, &viewCreateInfo, nullptr, &imageView) };
+	auto result{ vkCreateImageView(p_context->gpuInfo.device, &viewCreateInfo, nullptr, &imageView) };
 	DJINN_VK_ASSERT(result);
 
 	return imageView;
@@ -567,7 +567,7 @@ void HelloTriangleApp::createTextureSampler()
 	samplerCreateInfo.minLod = 0.0f;
 	samplerCreateInfo.maxLod = static_cast<float>(m_mipLevels);
 
-	auto result {vkCreateSampler(p_instance->device, &samplerCreateInfo, nullptr, &textureSampler)};
+	auto result {vkCreateSampler(p_context->gpuInfo.device, &samplerCreateInfo, nullptr, &textureSampler)};
 	DJINN_VK_ASSERT(result);
 }
 
@@ -588,7 +588,7 @@ void HelloTriangleApp::createColorResources()
 	createInfo.sharingMode = p_swapChain->sharingMode;
 	createInfo.numSamples = msaaSamples;
 
-	colorImage.Init(p_instance, createInfo);
+	colorImage.Init(p_context, createInfo);
 
 }
 
@@ -601,7 +601,7 @@ VkCommandBuffer HelloTriangleApp::beginSingleTimeCommands(VkCommandPool& command
 	allocateInfo.commandBufferCount = 1;
 
 	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(p_instance->device, &allocateInfo, &commandBuffer);
+	vkAllocateCommandBuffers(p_context->gpuInfo.device, &allocateInfo, &commandBuffer);
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -624,7 +624,7 @@ void HelloTriangleApp::endSingleTimeCommands(VkCommandPool& commandPool, VkComma
 	vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
 	vkQueueWaitIdle(graphicsQueue);
 
-	vkFreeCommandBuffers(p_instance->device, commandPool, 1, &commandBuffer);
+	vkFreeCommandBuffers(p_context->gpuInfo.device, commandPool, 1, &commandBuffer);
 }
 
 // transition image layout by inserting image memory barrier to commandBuffer
@@ -707,7 +707,7 @@ void HelloTriangleApp::generateMipMaps(VkImage image, const VkFormat format, con
 {
 	// check if image formats support linear blitting
 	VkFormatProperties formatProperties;
-	vkGetPhysicalDeviceFormatProperties(p_instance->physicalDevice, format, &formatProperties);
+	vkGetPhysicalDeviceFormatProperties(p_context->gpuInfo.gpu, format, &formatProperties);
 
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
 	{
@@ -821,21 +821,21 @@ void HelloTriangleApp::createImage(const uint32_t width, const uint32_t height, 
 	imageCreateInfo.samples = numSamples;
 	imageCreateInfo.flags = 0; // opt
 
-	auto result{ vkCreateImage(p_instance->device, &imageCreateInfo, nullptr, &image) };
+	auto result{ vkCreateImage(p_context->gpuInfo.device, &imageCreateInfo, nullptr, &image) };
 	DJINN_VK_ASSERT(result);
 
 	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(p_instance->device, image, &memRequirements);
+	vkGetImageMemoryRequirements(p_context->gpuInfo.device, image, &memRequirements);
 
 	VkMemoryAllocateInfo allocateInfo{};
 	allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocateInfo.allocationSize = memRequirements.size;
 	allocateInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
 
-	result = vkAllocateMemory(p_instance->device, &allocateInfo, nullptr, &imageMemory);
+	result = vkAllocateMemory(p_context->gpuInfo.device, &allocateInfo, nullptr, &imageMemory);
 	DJINN_VK_ASSERT(result);
 
-	result = vkBindImageMemory(p_instance->device, image, imageMemory, 0);
+	result = vkBindImageMemory(p_context->gpuInfo.device, image, imageMemory, 0);
 	DJINN_VK_ASSERT(result);
 }
 
@@ -908,14 +908,15 @@ void HelloTriangleApp::createDescriptorSetLayout()
 	samplerLayourBinding.pImmutableSamplers = nullptr;
 	samplerLayourBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	std::array<VkDescriptorSetLayoutBinding, 2> bindings {uboLayoutBinding, samplerLayourBinding};
+	//std::array<VkDescriptorSetLayoutBinding, 2> bindings {uboLayoutBinding, samplerLayourBinding};
+	Djinn::Array1D< VkDescriptorSetLayoutBinding, 2> bindings{ uboLayoutBinding, samplerLayourBinding };
 
 	VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
 	layoutCreateInfo.sType					= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutCreateInfo.bindingCount			= static_cast<uint32_t>(bindings.size());
-	layoutCreateInfo.pBindings				= bindings.data();
+	layoutCreateInfo.bindingCount			= static_cast<uint32_t>(bindings.NumElem());
+	layoutCreateInfo.pBindings				= bindings.Ptr();
 
-	auto result { (vkCreateDescriptorSetLayout(p_instance->device, &layoutCreateInfo, nullptr, &descriptorSetLayout))};
+	auto result { (vkCreateDescriptorSetLayout(p_context->gpuInfo.device, &layoutCreateInfo, nullptr, &descriptorSetLayout))};
 	DJINN_VK_ASSERT(result);
 }
 
@@ -937,16 +938,16 @@ void HelloTriangleApp::createVertexBuffer()
 	createBuffer(bufferSize, stagingBufferFlags, stagingMemoryFlags, stagingBuffer, stagingBufferMemory, 0);
 
 	void* data;
-	vkMapMemory(p_instance->device, stagingBufferMemory, 0, bufferSize, 0, &data);
+	vkMapMemory(p_context->gpuInfo.device, stagingBufferMemory, 0, bufferSize, 0, &data);
 	memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
-	vkUnmapMemory(p_instance->device, stagingBufferMemory);
+	vkUnmapMemory(p_context->gpuInfo.device, stagingBufferMemory);
 
 	createBuffer(bufferSize, vertexBufferFlags, vertexMemoryFlags, vertexBuffer, vertexBufferMemory, 0);
 
 	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
-	vkDestroyBuffer(p_instance->device, stagingBuffer, nullptr);
-	vkFreeMemory(p_instance->device, stagingBufferMemory, nullptr);
+	vkDestroyBuffer(p_context->gpuInfo.device, stagingBuffer, nullptr);
+	vkFreeMemory(p_context->gpuInfo.device, stagingBufferMemory, nullptr);
 }
 
 void HelloTriangleApp::createIndexBuffer()
@@ -966,16 +967,16 @@ void HelloTriangleApp::createIndexBuffer()
 	createBuffer(bufferSize, stagingBufferFlags, stagingMemoryFlags, stagingBuffer, stagingBufferMemory, 0);
 
 	void* data;
-	vkMapMemory(p_instance->device, stagingBufferMemory, 0, bufferSize, 0, &data);
+	vkMapMemory(p_context->gpuInfo.device, stagingBufferMemory, 0, bufferSize, 0, &data);
 	memcpy(data, vertexIndices.data(), static_cast<size_t>(bufferSize));
-	vkUnmapMemory(p_instance->device, stagingBufferMemory);
+	vkUnmapMemory(p_context->gpuInfo.device, stagingBufferMemory);
 
 	createBuffer(bufferSize, indexBufferFlags, indexMemoryFlags, indexBuffer, indexBufferMemory, 0);
 
 	copyBuffer(stagingBuffer, indexBuffer, bufferSize);
 
-	vkDestroyBuffer(p_instance->device, stagingBuffer, nullptr);
-	vkFreeMemory(p_instance->device, stagingBufferMemory, nullptr);
+	vkDestroyBuffer(p_context->gpuInfo.device, stagingBuffer, nullptr);
+	vkFreeMemory(p_context->gpuInfo.device, stagingBufferMemory, nullptr);
 }
 
 void HelloTriangleApp::createUniformBuffers()
@@ -1010,7 +1011,7 @@ void HelloTriangleApp::createDescriptorPool()
 	poolCreateInfo.pPoolSizes							= poolSizes.data();
 	poolCreateInfo.maxSets								= static_cast<uint32_t>(p_swapChain->swapChainImages.size());
 
-	auto result { (vkCreateDescriptorPool(p_instance->device, &poolCreateInfo, nullptr, &descriptorPool))};
+	auto result { (vkCreateDescriptorPool(p_context->gpuInfo.device, &poolCreateInfo, nullptr, &descriptorPool))};
 	DJINN_VK_ASSERT(result);
 }
 
@@ -1025,7 +1026,7 @@ void HelloTriangleApp::createDescriptorSets()
 	allocInfo.pSetLayouts								= layouts.data();
 
 	descriptorSets.resize(p_swapChain->swapChainImages.size());
-	auto result {(vkAllocateDescriptorSets(p_instance->device, &allocInfo, descriptorSets.data()))};
+	auto result {(vkAllocateDescriptorSets(p_context->gpuInfo.device, &allocInfo, descriptorSets.data()))};
 	DJINN_VK_ASSERT(result);
 
 	for (size_t i = 0; i < p_swapChain->swapChainImages.size(); ++i)
@@ -1062,7 +1063,7 @@ void HelloTriangleApp::createDescriptorSets()
  		descriptorWrites[1].pImageInfo = &imageInfo; 
 		descriptorWrites[1].pTexelBufferView = nullptr; // opt
 
-		vkUpdateDescriptorSets(p_instance->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+		vkUpdateDescriptorSets(p_context->gpuInfo.device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
 }
 
@@ -1081,17 +1082,17 @@ void HelloTriangleApp::updateUniformBuffer(const uint32_t imageIndex)
 	ubo.projection[1][1] *= -1.0f;
 
 	void* data;
-	vkMapMemory(p_instance->device, uniformBuffersMemory[imageIndex], 0, sizeof(ubo), 0, &data);
+	vkMapMemory(p_context->gpuInfo.device, uniformBuffersMemory[imageIndex], 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
-	vkUnmapMemory(p_instance->device, uniformBuffersMemory[imageIndex]);
+	vkUnmapMemory(p_context->gpuInfo.device, uniformBuffersMemory[imageIndex]);
 }
 
 
 void HelloTriangleApp::createBuffer(const VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
 	VkBuffer& buffer, VkDeviceMemory& bufferMemory, const VkDeviceSize offset)
 {
-	QueueFamilyIndices queueFamilyIndices{ findQueueFamilies(p_instance->physicalDevice, p_instance->surface) };
-	std::array<uint32_t, 2> queueFamilies{ queueFamilyIndices.graphicsFamily.value(), queueFamilyIndices.transferFamily.value() };
+	//QueueFamilyIndices queueFamilyIndices{ findQueueFamilies(p_context->physicalDevice, p_context->surface) };
+	Djinn::Array1D<uint32_t, 2> queueFamilies{ p_context->queueFamilyIndices.graphicsFamily.value(), p_context->queueFamilyIndices.transferFamily.value() };
 
 	VkBufferCreateInfo bufferCreateInfo{};
 	bufferCreateInfo.sType					= VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -1099,14 +1100,14 @@ void HelloTriangleApp::createBuffer(const VkDeviceSize size, VkBufferUsageFlags 
 	bufferCreateInfo.usage					= usage;
 	// currently always want concurrent usage because we want graphics, transfer queues to have access
 	bufferCreateInfo.sharingMode			= p_swapChain->sharingMode;
-	bufferCreateInfo.queueFamilyIndexCount	= static_cast<uint32_t>(queueFamilies.size());
-	bufferCreateInfo.pQueueFamilyIndices	= queueFamilies.data();
+	bufferCreateInfo.queueFamilyIndexCount	= static_cast<uint32_t>(queueFamilies.NumElem());
+	bufferCreateInfo.pQueueFamilyIndices	= queueFamilies.Ptr();
 
-	auto result {vkCreateBuffer(p_instance->device, &bufferCreateInfo, nullptr, &buffer)};
+	auto result {vkCreateBuffer(p_context->gpuInfo.device, &bufferCreateInfo, nullptr, &buffer)};
 	DJINN_VK_ASSERT(result);
 
 	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements(p_instance->device, buffer, &memRequirements);
+	vkGetBufferMemoryRequirements(p_context->gpuInfo.device, buffer, &memRequirements);
 
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType							= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -1114,10 +1115,10 @@ void HelloTriangleApp::createBuffer(const VkDeviceSize size, VkBufferUsageFlags 
 	allocInfo.memoryTypeIndex				= findMemoryType(memRequirements.memoryTypeBits, properties);
 
 	// TODO : make custom allocator that manages this memory and passes offsets
-	result	= vkAllocateMemory(p_instance->device, &allocInfo, nullptr, &bufferMemory);
+	result	= vkAllocateMemory(p_context->gpuInfo.device, &allocInfo, nullptr, &bufferMemory);
 	DJINN_VK_ASSERT(result);
 
-	vkBindBufferMemory(p_instance->device, buffer, bufferMemory, offset);
+	vkBindBufferMemory(p_context->gpuInfo.device, buffer, bufferMemory, offset);
 }
 
 void HelloTriangleApp::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, const VkDeviceSize size)
@@ -1135,8 +1136,7 @@ void HelloTriangleApp::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, const 
 
 uint32_t HelloTriangleApp::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
-	VkPhysicalDeviceMemoryProperties memProperties;
-	vkGetPhysicalDeviceMemoryProperties(p_instance->physicalDevice, &memProperties);
+	const auto memProperties = p_context->gpuInfo.memProperties;
 
 	for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
 	{
@@ -1155,7 +1155,7 @@ uint32_t HelloTriangleApp::findMemoryType(uint32_t typeFilter, VkMemoryPropertyF
 void HelloTriangleApp::createCommandBuffers()
 {
 	// create clear values
-	std::array<VkClearValue, 2> clearValues{};
+	Djinn::Array1D<VkClearValue, 2> clearValues{};
 	clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
 	clearValues[1].depthStencil = {1.0f, 0};
 
@@ -1167,7 +1167,7 @@ void HelloTriangleApp::createCommandBuffers()
 	allocInfo.level										= VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount						= static_cast<uint32_t>(commandBuffers.size());
 
-	auto result {vkAllocateCommandBuffers(p_instance->device, &allocInfo, commandBuffers.data())};
+	auto result {vkAllocateCommandBuffers(p_context->gpuInfo.device, &allocInfo, commandBuffers.data())};
 	DJINN_VK_ASSERT(result);
 
 	// begin command buffer recording
@@ -1192,8 +1192,8 @@ void HelloTriangleApp::createCommandBuffers()
 		renderPassInfo.renderArea.offset				= {0, 0};	
 		renderPassInfo.renderArea.extent				= p_swapChain->swapChainExtent;
 
-		renderPassInfo.clearValueCount					= static_cast<uint32_t>(clearValues.size());
-		renderPassInfo.pClearValues						= clearValues.data();
+		renderPassInfo.clearValueCount					= static_cast<uint32_t>(clearValues.NumElem());
+		renderPassInfo.pClearValues						= clearValues.Ptr();
 
 		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
@@ -1226,9 +1226,9 @@ void HelloTriangleApp::createSyncObjects()
 
 	for(size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 	{
-		auto result = (vkCreateSemaphore(p_instance->device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) == VK_SUCCESS &&
-			vkCreateSemaphore(p_instance->device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) == VK_SUCCESS &&
-			vkCreateFence(p_instance->device, &fenceInfo, nullptr, &inFlightFences[i]) == VK_SUCCESS);
+		auto result = (vkCreateSemaphore(p_context->gpuInfo.device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) == VK_SUCCESS &&
+			vkCreateSemaphore(p_context->gpuInfo.device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) == VK_SUCCESS &&
+			vkCreateFence(p_context->gpuInfo.device, &fenceInfo, nullptr, &inFlightFences[i]) == VK_SUCCESS);
 		assert(result);
 	}
 }
@@ -1236,11 +1236,11 @@ void HelloTriangleApp::createSyncObjects()
 void HelloTriangleApp::drawFrame()
 {
 	// wait for fence from previous vkQueueSubmit call
-	vkWaitForFences(p_instance->device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+	vkWaitForFences(p_context->gpuInfo.device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
 	uint32_t imageIndex;
 	// if we acquire the image IMAGE_AVAILABLE semaphore will be signaled
-	auto result {vkAcquireNextImageKHR(p_instance->device, p_swapChain->swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex)};
+	auto result {vkAcquireNextImageKHR(p_context->gpuInfo.device, p_swapChain->swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex)};
 
 	assert(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR);
 
@@ -1248,7 +1248,7 @@ void HelloTriangleApp::drawFrame()
 	// check if a previous frame is using this image
 	if (imagesInFlight[imageIndex] != VK_NULL_HANDLE)
 	{
-		vkWaitForFences(p_instance->device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+		vkWaitForFences(p_context->gpuInfo.device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
 	}
 
 	// mark image as "in-use"
@@ -1269,7 +1269,7 @@ void HelloTriangleApp::drawFrame()
 	submitInfo.signalSemaphoreCount						= 1;
 	submitInfo.pSignalSemaphores						= &renderFinishedSemaphores[currentFrame];
 
-	vkResetFences(p_instance->device, 1, &inFlightFences[currentFrame]);
+	vkResetFences(p_context->gpuInfo.device, 1, &inFlightFences[currentFrame]);
 	result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]);
 	DJINN_VK_ASSERT(result);
  
@@ -1285,9 +1285,9 @@ void HelloTriangleApp::drawFrame()
 
 	result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || p_instance->framebufferResized)
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || p_context->framebufferResized)
 	{
-		p_instance->framebufferResized = false;
+		p_context->framebufferResized = false;
 		recreateSwapChain();
 	}
 	else if (result != VK_SUCCESS)
@@ -1298,6 +1298,38 @@ void HelloTriangleApp::drawFrame()
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;		
 }
 
+void HelloTriangleApp::initImGui()
+{
+	//1: create descriptor pool for IMGUI
+		// the size of the pool is very oversize, but its copied from imgui demo itself.
+	VkDescriptorPoolSize poolSizes[] =
+	{
+		{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+	};
+
+	VkDescriptorPoolCreateInfo poolCreateInfo{};
+	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+	poolCreateInfo.maxSets = 1000;
+	poolCreateInfo.poolSizeCount = std::size(poolSizes);
+	poolCreateInfo.pPoolSizes = poolSizes;
+
+	VkDescriptorPool imguiPool;
+	DJINN_VK_ASSERT(vkCreateDescriptorPool(p_context->gpuInfo.device, &poolCreateInfo, nullptr, &imguiPool));
+
+	// init imgui
+
+}
 
 
 

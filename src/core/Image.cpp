@@ -93,7 +93,7 @@ void Djinn::createImage(Context* p_context, SwapChain* p_swapChain, const uint32
 	DJINN_VK_ASSERT(result);
 
 	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(p_context->device, image, &memRequirements);
+	vkGetImageMemoryRequirements(p_context->gpuInfo.device, image, &memRequirements);
 
 	VkMemoryAllocateInfo allocateInfo{};
 	allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
