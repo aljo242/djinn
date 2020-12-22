@@ -213,13 +213,6 @@ void HelloTriangleApp::createRenderPass()
 	colorAttachment.initialLayout			= VK_IMAGE_LAYOUT_UNDEFINED;
 	colorAttachment.finalLayout				= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-	// ref to attachment describes it in a "higher order" way
-	// provides uint32_t index
-	VkAttachmentReference colorAttachmentRef{};
-	colorAttachmentRef.attachment			= 0;
-	colorAttachmentRef.layout				= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-
 	VkAttachmentDescription depthAttachment{};
 	depthAttachment.format = findDepthFormat();
 	depthAttachment.samples = msaaSamples;
@@ -229,12 +222,9 @@ void HelloTriangleApp::createRenderPass()
 	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-	VkAttachmentReference depthAttachmentRef{};
-	depthAttachmentRef.attachment = 1;
-	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
+	
 	// color attachment 
+	// resolve to 1 sample after combining MSAASAMPLES num samples for AA
 	VkAttachmentDescription colorAttachmentResolve{};
 	colorAttachmentResolve.format = p_swapChain->swapChainImageFormat;
 	colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -244,6 +234,17 @@ void HelloTriangleApp::createRenderPass()
 	colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	// ref to attachment describes it in a "higher order" way
+	// provides uint32_t index
+	// basically, enumerate the attachments
+	VkAttachmentReference colorAttachmentRef{};
+	colorAttachmentRef.attachment = 0;
+	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference depthAttachmentRef{};
+	depthAttachmentRef.attachment = 1;
+	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 	VkAttachmentReference colorAttachmentResolveRef{};
 	colorAttachmentResolveRef.attachment = 2;
@@ -264,12 +265,16 @@ void HelloTriangleApp::createRenderPass()
 	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-	std::array<VkAttachmentDescription, 3> attachments {colorAttachment, depthAttachment, colorAttachmentResolve};
+	//std::array<VkAttachmentDescription, 3> attachments {colorAttachment, depthAttachment, colorAttachmentResolve};
+	Djinn::Array1D<VkAttachmentDescription, 3> attachments{ colorAttachment, depthAttachment, colorAttachmentResolve };
+	//attachments[0] = colorAttachment;
+	//attachments[1] = depthAttachment;
+	//attachments[2] = colorAttachmentResolve;
 
 	VkRenderPassCreateInfo renderPassInfo{};
 	renderPassInfo.sType					= VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount			= static_cast<uint32_t>(attachments.size());
-	renderPassInfo.pAttachments				= attachments.data();
+	renderPassInfo.attachmentCount			= static_cast<uint32_t>(attachments.NumElem());
+	renderPassInfo.pAttachments				= attachments.Ptr();
 	renderPassInfo.subpassCount				= 1;
 	renderPassInfo.pSubpasses				= &subpass;
 	renderPassInfo.dependencyCount			= 1;
@@ -908,8 +913,7 @@ void HelloTriangleApp::createDescriptorSetLayout()
 	samplerLayourBinding.pImmutableSamplers = nullptr;
 	samplerLayourBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	//std::array<VkDescriptorSetLayoutBinding, 2> bindings {uboLayoutBinding, samplerLayourBinding};
-	Djinn::Array1D< VkDescriptorSetLayoutBinding, 2> bindings{ uboLayoutBinding, samplerLayourBinding };
+	Djinn::Array1D<VkDescriptorSetLayoutBinding, 2> bindings{ uboLayoutBinding, samplerLayourBinding };
 
 	VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
 	layoutCreateInfo.sType					= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -999,7 +1003,7 @@ void HelloTriangleApp::createUniformBuffers()
 
 void HelloTriangleApp::createDescriptorPool()
 {
-	std::array<VkDescriptorPoolSize, 2> poolSizes{};
+	Djinn::Array1D<VkDescriptorPoolSize, 2> poolSizes;
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	poolSizes[0].descriptorCount = static_cast<uint32_t>(p_swapChain->swapChainImages.size());
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1007,8 +1011,8 @@ void HelloTriangleApp::createDescriptorPool()
 
 	VkDescriptorPoolCreateInfo poolCreateInfo{};
 	poolCreateInfo.sType								= VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolCreateInfo.poolSizeCount						= static_cast<uint32_t>(poolSizes.size());
-	poolCreateInfo.pPoolSizes							= poolSizes.data();
+	poolCreateInfo.poolSizeCount						= static_cast<uint32_t>(poolSizes.NumElem());
+	poolCreateInfo.pPoolSizes							= poolSizes.Ptr();
 	poolCreateInfo.maxSets								= static_cast<uint32_t>(p_swapChain->swapChainImages.size());
 
 	auto result { (vkCreateDescriptorPool(p_context->gpuInfo.device, &poolCreateInfo, nullptr, &descriptorPool))};
@@ -1042,6 +1046,8 @@ void HelloTriangleApp::createDescriptorSets()
 		imageInfo.sampler = textureSampler;
 
 		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+		//Djinn::Array1D<VkWriteDescriptorSet, 2> descriptorWrites;
+		//VkWriteDescriptorSet descriptorWrites[2];
 
 		descriptorWrites[0].sType						= VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptorWrites[0].dstSet						= descriptorSets[i];
