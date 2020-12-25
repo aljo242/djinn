@@ -333,8 +333,8 @@ uint32_t Djinn::Context::rateDeviceSuitability(VkPhysicalDevice physicalDev)
 	deviceProperties.pNext = nullptr;
 	vkGetPhysicalDeviceProperties2(physicalDev, &deviceProperties);
 
-	VkPhysicalDeviceFeatures deviceFeatures;
-	vkGetPhysicalDeviceFeatures(physicalDev, &deviceFeatures);
+	VkPhysicalDeviceFeatures2 deviceFeatures;
+	vkGetPhysicalDeviceFeatures2(physicalDev, &deviceFeatures);
 
 	uint32_t score{ 0 };
 
@@ -357,7 +357,7 @@ uint32_t Djinn::Context::rateDeviceSuitability(VkPhysicalDevice physicalDev)
 	// https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkPhysicalDeviceFeatures.html
 	// if engine requires any of these features, may be required like shown 
 	// below with geometry shader requirements
-	if (!deviceFeatures.geometryShader)
+	if (!deviceFeatures.features.geometryShader)
 	{
 		return 0;
 	}
@@ -368,7 +368,7 @@ uint32_t Djinn::Context::rateDeviceSuitability(VkPhysicalDevice physicalDev)
 	}
 
 	// check if we support graphics queues and presentation
-	QueueFamilyIndices indices{ findQueueFamilies(physicalDev, surface) };
+	auto indices{ findQueueFamilies(physicalDev, surface) };
 	if (!indices.isComplete())
 	{
 		return 0;
@@ -380,7 +380,7 @@ uint32_t Djinn::Context::rateDeviceSuitability(VkPhysicalDevice physicalDev)
 		score += 1000;
 	}
 
-	SwapChainSupportDetails swapChainSupport{ querySwapChainSupport(physicalDev,	surface) };
+	const auto swapChainSupport{ querySwapChainSupport(physicalDev,	surface) };
 	// if we support formats AND present modes, swapchain support is "adequate"
 	bool swapChainAdequate{ !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty() };
 	if (!swapChainAdequate)
