@@ -334,6 +334,8 @@ uint32_t Djinn::Context::rateDeviceSuitability(VkPhysicalDevice physicalDev)
 	vkGetPhysicalDeviceProperties2(physicalDev, &deviceProperties);
 
 	VkPhysicalDeviceFeatures2 deviceFeatures;
+	deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	deviceFeatures.pNext = nullptr;
 	vkGetPhysicalDeviceFeatures2(physicalDev, &deviceFeatures);
 
 	uint32_t score{ 0 };

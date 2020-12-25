@@ -444,17 +444,19 @@ void HelloTriangleApp::createGraphicsPipeline()
 
 void HelloTriangleApp::createCommandPool()
 {
-	//QueueFamilyIndices queueFamilyIndices				{findQueueFamilies(p_context->physicalDevice, p_context->surface)};
+	const auto graphicsFamilyIndex = p_context->queueFamilyIndices.graphicsFamily.value();
+	const auto transferFamilyIndex = p_context->queueFamilyIndices.transferFamily.value();
 
 	VkCommandPoolCreateInfo poolCreateInfo{};
 	poolCreateInfo.sType								= VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolCreateInfo.queueFamilyIndex						= p_context->queueFamilyIndices.graphicsFamily.value();
-	poolCreateInfo.flags								= 0;	// Optional
+	poolCreateInfo.queueFamilyIndex						= graphicsFamilyIndex;
+	poolCreateInfo.flags								= VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 	auto result {(vkCreateCommandPool(p_context->gpuInfo.device, &poolCreateInfo, nullptr, &gfxCommandPool))};
 	DJINN_VK_ASSERT(result);
 
-	poolCreateInfo.queueFamilyIndex = p_context->queueFamilyIndices.transferFamily.value();
+	// transfer pool
+	poolCreateInfo.queueFamilyIndex = transferFamilyIndex;
 
 	// transfer commands are short-lived, so this hint could lead to allocation optimizations
 	poolCreateInfo.flags								= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
