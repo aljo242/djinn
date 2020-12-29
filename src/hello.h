@@ -140,6 +140,8 @@ private:
 	void loadModel(const std::string& path);
 	void createVertexBuffer();
 	void createIndexBuffer();
+	void createVertexBufferStaged();
+	void createIndexBufferStaged();
 	void createUniformBuffers();
 	void createDescriptorPool();	
 	void createDescriptorSets();

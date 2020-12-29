@@ -59,8 +59,8 @@ void HelloTriangleApp::initVulkan()
 	createTextureImageView();	//
 	createTextureSampler();		//
 	loadModel(MODEL_PATH);				//
-	createVertexBuffer();		//
-	createIndexBuffer();		//
+	createVertexBufferStaged();		//
+	createIndexBufferStaged();		//
 	createUniformBuffers();		//
 	createDescriptorPool();		//
 	createDescriptorSets();		//
@@ -895,6 +895,16 @@ void HelloTriangleApp::loadModel(const std::string& path)
 	}
 }
 
+void HelloTriangleApp::createVertexBuffer()
+{
+
+}
+
+void HelloTriangleApp::createIndexBuffer()
+{
+
+}
+
 void HelloTriangleApp::createDescriptorSetLayout()
 {
 	VkDescriptorSetLayoutBinding uboLayoutBinding{};
@@ -923,7 +933,7 @@ void HelloTriangleApp::createDescriptorSetLayout()
 }
 
 
-void HelloTriangleApp::createVertexBuffer()
+void HelloTriangleApp::createVertexBufferStaged()
 {
 	const VkDeviceSize bufferSize{ sizeof(vertices[0]) * vertices.size() };
 
@@ -944,23 +954,17 @@ void HelloTriangleApp::createVertexBuffer()
 	bufferCreateInfo.sharingMode = p_swapChain->sharingMode;
 	_vertexBuffer.Init(p_context, bufferCreateInfo);
 
-	void* data;
-	vkMapMemory(p_context->gpuInfo.device, _stagingBuffer.bufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
-	vkUnmapMemory(p_context->gpuInfo.device, _stagingBuffer.bufferMemory);
+	copyToStagingBuffer(p_context, _stagingBuffer, bufferSize, 0, vertices.data());
 
 	copyBuffer(p_context, _stagingBuffer, _vertexBuffer, bufferSize);
 
 	_stagingBuffer.CleanUp(p_context);
-	
-}
-
-void stagedTransfer(Djinn::Context* p_context, const VkMemoryPropertyFlags finalUsage, const VkSharingMode sharingMode, const VkDeviceSize objectSize, void* data)
-{
 
 }
 
-void HelloTriangleApp::createIndexBuffer()
+
+
+void HelloTriangleApp::createIndexBufferStaged()
 {
 	const VkDeviceSize bufferSize							{ sizeof(vertexIndices[0]) * vertexIndices.size() };
 
@@ -981,11 +985,7 @@ void HelloTriangleApp::createIndexBuffer()
 	bufferCreateInfo.sharingMode = p_swapChain->sharingMode;
 	_indexBuffer.Init(p_context, bufferCreateInfo);
 
-	void* data;
-	vkMapMemory(p_context->gpuInfo.device, _stagingBuffer.bufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, vertexIndices.data(), static_cast<size_t>(bufferSize));
-	vkUnmapMemory(p_context->gpuInfo.device, _stagingBuffer.bufferMemory);
-
+	copyToStagingBuffer(p_context, _stagingBuffer, bufferSize, 0, vertexIndices.data());
 	copyBuffer(p_context, _stagingBuffer, _indexBuffer, bufferSize);
 
 	_stagingBuffer.CleanUp(p_context);
