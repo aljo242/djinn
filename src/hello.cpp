@@ -54,7 +54,7 @@ void HelloTriangleApp::initVulkan()
 	createDepthResources();		//
 	//createFramebuffers();		//
 	p_swapChain->createFramebuffers(p_context, &colorImage, &depthImage, renderPass);
-	createCommandPool();		//
+	//createCommandPool();		//
 	createTextureImage();		// 
 	createTextureImageView();	//
 	createTextureSampler();		//
@@ -103,10 +103,10 @@ void HelloTriangleApp::cleanup()
 
 	vkDestroyDescriptorSetLayout(p_context->gpuInfo.device, descriptorSetLayout, nullptr);
 
-	vkDestroyBuffer(p_context->gpuInfo.device, vertexBuffer, nullptr);
-	vkFreeMemory(p_context->gpuInfo.device, vertexBufferMemory, nullptr);
-	vkDestroyBuffer(p_context->gpuInfo.device, indexBuffer, nullptr);
-	vkFreeMemory(p_context->gpuInfo.device, indexBufferMemory, nullptr);
+
+	_vertexBuffer.CleanUp(p_context);
+	_indexBuffer.CleanUp(p_context);
+
 	vkDestroyImage(p_context->gpuInfo.device, textureImage, nullptr);
 	vkFreeMemory(p_context->gpuInfo.device, textureImageMemory, nullptr);
 
@@ -121,8 +121,7 @@ void HelloTriangleApp::cleanup()
 		vkDestroyFence(p_context->gpuInfo.device, inFlightFences[i], nullptr);
 	}
 
-	vkDestroyCommandPool(p_context->gpuInfo.device, gfxCommandPool, nullptr);
-	vkDestroyCommandPool(p_context->gpuInfo.device, transferCommandPool, nullptr);
+
 
 	p_context->CleanUp();
 }
@@ -167,8 +166,7 @@ void HelloTriangleApp::cleanupSwapChain()
 {
 	p_swapChain->CleanUp(p_context);
 
-
-	vkFreeCommandBuffers(p_context->gpuInfo.device, gfxCommandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+	vkFreeCommandBuffers(p_context->gpuInfo.device, p_context->graphicsCommandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 	vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(p_context->gpuInfo.device, pipelineLayout, nullptr);
 	vkDestroyRenderPass(p_context->gpuInfo.device, renderPass, nullptr);
@@ -439,7 +437,7 @@ void HelloTriangleApp::createGraphicsPipeline()
 	DJINN_VK_ASSERT(result);
 }
 
-
+/*
 void HelloTriangleApp::createCommandPool()
 {
 	const auto graphicsFamilyIndex = p_context->queueFamilyIndices.graphicsFamily.value();
@@ -462,7 +460,7 @@ void HelloTriangleApp::createCommandPool()
 	result = (vkCreateCommandPool(p_context->gpuInfo.device, &poolCreateInfo, nullptr, &transferCommandPool));
 	DJINN_VK_ASSERT(result);
 }
-
+*/
 
 void HelloTriangleApp::createDepthResources()
 {
@@ -636,7 +634,7 @@ void HelloTriangleApp::endSingleTimeCommands(VkCommandPool& commandPool, VkComma
 void HelloTriangleApp::transitionImageLayout(const VkImage image, const VkFormat format, const VkImageLayout oldLayout, 
 	const VkImageLayout newLayout, const uint32_t mipLevels)
 {
-	VkCommandBuffer commandBuffer {beginSingleTimeCommands(transferCommandPool)};
+	VkCommandBuffer commandBuffer {beginSingleTimeCommands(p_context->transferCommandPool)};
 
 	VkImageMemoryBarrier barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -679,13 +677,13 @@ void HelloTriangleApp::transitionImageLayout(const VkImage image, const VkFormat
 
 	vkCmdPipelineBarrier(commandBuffer, srcFlags, dstFlags, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-	endSingleTimeCommands(transferCommandPool, commandBuffer, p_context->transferQueue);
+	endSingleTimeCommands(p_context->transferCommandPool, commandBuffer, p_context->transferQueue);
 }
 
 
 void HelloTriangleApp::copyBufferToImage(VkBuffer buffer, VkImage image, const uint32_t width, const uint32_t height)
 { 
-	VkCommandBuffer commandBuffer	{beginSingleTimeCommands(transferCommandPool)};
+	VkCommandBuffer commandBuffer	{beginSingleTimeCommands(p_context->transferCommandPool)};
 
 	// copy the whole thing [0, 0, 0] -> [width, height, 1]
 	VkBufferImageCopy region{};
@@ -704,7 +702,7 @@ void HelloTriangleApp::copyBufferToImage(VkBuffer buffer, VkImage image, const u
 	// currently assumes layout has been transistioned to this state
 	vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-	endSingleTimeCommands(transferCommandPool, commandBuffer, p_context->transferQueue);
+	endSingleTimeCommands(p_context->transferCommandPool, commandBuffer, p_context->transferQueue);
 }
 
 
@@ -719,7 +717,7 @@ void HelloTriangleApp::generateMipMaps(VkImage image, const VkFormat format, con
 		throw std::runtime_error("texture image format does not support linear blitting!");
 	}
 
-	VkCommandPool commandPool = gfxCommandPool;
+	VkCommandPool commandPool = p_context->graphicsCommandPool;
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands(commandPool);
 
 	VkImageMemoryBarrier barrier{};
@@ -928,34 +926,9 @@ void HelloTriangleApp::createDescriptorSetLayout()
 void HelloTriangleApp::createVertexBuffer()
 {
 	const VkDeviceSize bufferSize{ sizeof(vertices[0]) * vertices.size() };
-	const VkBufferUsageFlags stagingBufferFlags{ VK_BUFFER_USAGE_TRANSFER_SRC_BIT };
-	const VkMemoryPropertyFlags	stagingMemoryFlags{ VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-															VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
 
-	const VkBufferUsageFlags vertexBufferFlags{ VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-															VK_BUFFER_USAGE_VERTEX_BUFFER_BIT };
-	const VkMemoryPropertyFlags	vertexMemoryFlags{ VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT };
-
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
-
-	createBuffer(bufferSize, stagingBufferFlags, stagingMemoryFlags, stagingBuffer, stagingBufferMemory, 0);
-
-
-	void* data;
-	vkMapMemory(p_context->gpuInfo.device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
-	vkUnmapMemory(p_context->gpuInfo.device, stagingBufferMemory);
-
-	createBuffer(bufferSize, vertexBufferFlags, vertexMemoryFlags, vertexBuffer, vertexBufferMemory, 0);
-
-	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-	vkDestroyBuffer(p_context->gpuInfo.device, stagingBuffer, nullptr);
-	vkFreeMemory(p_context->gpuInfo.device, stagingBufferMemory, nullptr);
-	/*
 	Djinn::BufferCreateInfo bufferCreateInfo{};
-	bufferCreateInfo.size = sizeof(vertices[0]) * vertices.size();
+	bufferCreateInfo.size = bufferSize;
 	bufferCreateInfo.offset = 0;
 	bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	bufferCreateInfo.properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -964,42 +937,59 @@ void HelloTriangleApp::createVertexBuffer()
 	Djinn::Buffer _stagingBuffer;
 	_stagingBuffer.Init(p_context, bufferCreateInfo);
 
-	bufferCreateInfo.size = sizeof(vertices[0]) * vertices.size();
+	bufferCreateInfo.size = bufferSize;
 	bufferCreateInfo.offset = 0;
 	bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	bufferCreateInfo.properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 	bufferCreateInfo.sharingMode = p_swapChain->sharingMode;
 	_vertexBuffer.Init(p_context, bufferCreateInfo);
-	*/
+
+	void* data;
+	vkMapMemory(p_context->gpuInfo.device, _stagingBuffer.bufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
+	vkUnmapMemory(p_context->gpuInfo.device, _stagingBuffer.bufferMemory);
+
+	copyBuffer(p_context, _stagingBuffer, _vertexBuffer, bufferSize);
+
+	_stagingBuffer.CleanUp(p_context);
+	
+}
+
+void stagedTransfer(Djinn::Context* p_context, const VkMemoryPropertyFlags finalUsage, const VkSharingMode sharingMode, const VkDeviceSize objectSize, void* data)
+{
+
 }
 
 void HelloTriangleApp::createIndexBuffer()
 {
 	const VkDeviceSize bufferSize							{ sizeof(vertexIndices[0]) * vertexIndices.size() };
-	const VkBufferUsageFlags stagingBufferFlags				{ VK_BUFFER_USAGE_TRANSFER_SRC_BIT };
-	const VkMemoryPropertyFlags	stagingMemoryFlags			{ VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-																VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
 
-	const VkBufferUsageFlags indexBufferFlags				{ VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-																VK_BUFFER_USAGE_INDEX_BUFFER_BIT };
-	const VkMemoryPropertyFlags	indexMemoryFlags			{ VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT };
+	Djinn::BufferCreateInfo bufferCreateInfo{};
+	bufferCreateInfo.size = bufferSize;
+	bufferCreateInfo.offset = 0;
+	bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	bufferCreateInfo.properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	bufferCreateInfo.sharingMode = p_swapChain->sharingMode;
 
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
+	Djinn::Buffer _stagingBuffer;
+	_stagingBuffer.Init(p_context, bufferCreateInfo);
 
-	createBuffer(bufferSize, stagingBufferFlags, stagingMemoryFlags, stagingBuffer, stagingBufferMemory, 0);
+	bufferCreateInfo.size = bufferSize;
+	bufferCreateInfo.offset = 0;
+	bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+	bufferCreateInfo.properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	bufferCreateInfo.sharingMode = p_swapChain->sharingMode;
+	_indexBuffer.Init(p_context, bufferCreateInfo);
 
 	void* data;
-	vkMapMemory(p_context->gpuInfo.device, stagingBufferMemory, 0, bufferSize, 0, &data);
+	vkMapMemory(p_context->gpuInfo.device, _stagingBuffer.bufferMemory, 0, bufferSize, 0, &data);
 	memcpy(data, vertexIndices.data(), static_cast<size_t>(bufferSize));
-	vkUnmapMemory(p_context->gpuInfo.device, stagingBufferMemory);
+	vkUnmapMemory(p_context->gpuInfo.device, _stagingBuffer.bufferMemory);
 
-	createBuffer(bufferSize, indexBufferFlags, indexMemoryFlags, indexBuffer, indexBufferMemory, 0);
+	copyBuffer(p_context, _stagingBuffer, _indexBuffer, bufferSize);
 
-	copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+	_stagingBuffer.CleanUp(p_context);
 
-	vkDestroyBuffer(p_context->gpuInfo.device, stagingBuffer, nullptr);
-	vkFreeMemory(p_context->gpuInfo.device, stagingBufferMemory, nullptr);
 }
 
 void HelloTriangleApp::createUniformBuffers()
@@ -1145,7 +1135,7 @@ void HelloTriangleApp::createBuffer(const VkDeviceSize size, VkBufferUsageFlags 
 
 	vkBindBufferMemory(p_context->gpuInfo.device, buffer, bufferMemory, offset);
 }
-
+/*
 void HelloTriangleApp::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, const VkDeviceSize size)
 {
 	VkCommandBuffer commandBuffer {beginSingleTimeCommands(transferCommandPool)};
@@ -1157,7 +1147,7 @@ void HelloTriangleApp::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, const 
 	vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 	
 	endSingleTimeCommands(transferCommandPool, commandBuffer, p_context->transferQueue);
-}
+}*/
 
 
 
@@ -1172,7 +1162,7 @@ void HelloTriangleApp::createCommandBuffers()
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType										= VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool								= gfxCommandPool;
+	allocInfo.commandPool								= p_context->graphicsCommandPool;
 	allocInfo.level										= VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount						= static_cast<uint32_t>(commandBuffers.size());
 
@@ -1207,10 +1197,10 @@ void HelloTriangleApp::createCommandBuffers()
 		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-		VkBuffer vertexBuffers[] {vertexBuffer};
+		VkBuffer vertexBuffers[] {_vertexBuffer.buffer};
 		VkDeviceSize offsets[]	{0};
 		vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(commandBuffers[i], _indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
 

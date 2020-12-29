@@ -198,6 +198,8 @@ void Djinn::Context::Init()
 	vkGetDeviceQueue(gpuInfo.device, queueFamilyIndices.graphicsFamily.value(), 0, &graphicsQueue);
 	vkGetDeviceQueue(gpuInfo.device, queueFamilyIndices.presentFamily.value(), 0, &presentQueue);
 	vkGetDeviceQueue(gpuInfo.device, queueFamilyIndices.transferFamily.value(), 0, &transferQueue);
+
+	createCommandPools();
 }
 
 
@@ -217,6 +219,9 @@ void Djinn::Context::queryWindowSize()
 
 void Djinn::Context::CleanUp()
 {
+	vkDestroyCommandPool(gpuInfo.device, graphicsCommandPool, nullptr);
+	vkDestroyCommandPool(gpuInfo.device, transferCommandPool, nullptr);
+
 	vkDestroyDevice(gpuInfo.device, nullptr);
 
 	if constexpr (ENABLE_VALIDATION_LAYERS)
@@ -453,4 +458,29 @@ VkPhysicalDeviceFeatures Djinn::Context::populateDeviceFeatures()
 	deviceFeatures.samplerAnisotropy = VK_TRUE;
 
 	return deviceFeatures;
+}
+
+
+
+void Djinn::Context::createCommandPools()
+{
+	const auto graphicsFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+	const auto transferFamilyIndex = queueFamilyIndices.transferFamily.value();
+
+	VkCommandPoolCreateInfo poolCreateInfo{};
+	poolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	poolCreateInfo.queueFamilyIndex = graphicsFamilyIndex;
+	poolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+	auto result{ (vkCreateCommandPool(gpuInfo.device, &poolCreateInfo, nullptr, &graphicsCommandPool)) };
+	DJINN_VK_ASSERT(result);
+
+	// transfer pool
+	poolCreateInfo.queueFamilyIndex = transferFamilyIndex;
+
+	// transfer commands are short-lived, so this hint could lead to allocation optimizations
+	poolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+
+	result = (vkCreateCommandPool(gpuInfo.device, &poolCreateInfo, nullptr, &transferCommandPool));
+	DJINN_VK_ASSERT(result);
 }

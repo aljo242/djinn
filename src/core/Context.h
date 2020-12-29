@@ -47,9 +47,10 @@ namespace Djinn
 		VkSampleCountFlagBits getMaxUsableSampleCount();
 		bool checkDeviceExtensionSupport(VkPhysicalDevice physicalDev);
 		VkPhysicalDeviceFeatures populateDeviceFeatures();
+		void createCommandPools();
 
 	public:
-		RendererConfig renderConfig;
+		RendererConfig renderConfig{};
 
 		bool framebufferResized{false};
 
@@ -63,9 +64,12 @@ namespace Djinn
 		GPU_Info gpuInfo{};
 		QueueFamilyIndices queueFamilyIndices;
 
-		VkQueue graphicsQueue;
-		VkQueue presentQueue;
-		VkQueue transferQueue;
+		VkQueue graphicsQueue{ VK_NULL_HANDLE };
+		VkQueue presentQueue{ VK_NULL_HANDLE };
+		VkQueue transferQueue{ VK_NULL_HANDLE };
+
+		VkCommandPool transferCommandPool{ VK_NULL_HANDLE };
+		VkCommandPool graphicsCommandPool{ VK_NULL_HANDLE };
 
 	private:
 		DebugMessenger<DebugLevel::warning> debugMessenger{};

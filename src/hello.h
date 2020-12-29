@@ -147,7 +147,7 @@ private:
 	void createBuffer(const VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
 		VkBuffer& buffer, VkDeviceMemory& bufferMemory, const VkDeviceSize offset);
 	void createDescriptorSetLayout();
-	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, const VkDeviceSize size);
+	//void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, const VkDeviceSize size);
 	//uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	void createCommandBuffers();
 	void createSyncObjects();
@@ -163,17 +163,13 @@ private:
 
 	ImGui_ImplVulkanH_Window g_MainWindowData;
 
-	VkQueue graphicsQueue							{ VK_NULL_HANDLE };
-	VkQueue presentQueue							{ VK_NULL_HANDLE };
-	VkQueue transferQueue							{ VK_NULL_HANDLE }; 
-
 	VkDescriptorSetLayout descriptorSetLayout		{ VK_NULL_HANDLE };
 	VkPipelineLayout pipelineLayout					{ VK_NULL_HANDLE };
 	VkRenderPass renderPass							{ VK_NULL_HANDLE };
 	VkPipeline graphicsPipeline						{ VK_NULL_HANDLE };
 
-	VkCommandPool gfxCommandPool					{ VK_NULL_HANDLE };
-	VkCommandPool transferCommandPool				{ VK_NULL_HANDLE };
+	//VkCommandPool gfxCommandPool					{ VK_NULL_HANDLE };
+	//VkCommandPool transferCommandPool				{ VK_NULL_HANDLE };
 	std::vector<VkCommandBuffer> commandBuffers;
 
 	// synchronization
@@ -191,10 +187,10 @@ private:
 
 	// TODO 
 	// combine vertex and index buffer int o a single array
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
-	VkBuffer indexBuffer;
-	VkDeviceMemory indexBufferMemory;
+	//VkBuffer vertexBuffer;
+	//VkDeviceMemory vertexBufferMemory;
+	//VkBuffer indexBuffer;
+	//VkDeviceMemory indexBufferMemory;
 
 	Djinn::Buffer _vertexBuffer;
 	Djinn::Buffer _indexBuffer;
