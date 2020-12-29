@@ -129,7 +129,7 @@ private:
 	void createColorResources();
 	VkImageView createImageView(const VkImage image, const VkFormat format, const VkImageAspectFlags aspectFlags, const uint32_t mipLevels);
 	VkCommandBuffer beginSingleTimeCommands(VkCommandPool& commandPool);
-	void endSingleTimeCommands(VkCommandPool& commandPool, VkCommandBuffer commandBuffer);
+	void endSingleTimeCommands(VkCommandPool& commandPool, VkCommandBuffer commandBuffer, VkQueue submitQueue);
 	void transitionImageLayout(VkImage image, const VkFormat format, const VkImageLayout oldLayout,
 		const VkImageLayout newLayout, const uint32_t mipLevels);
 	void copyBufferToImage(VkBuffer buffer, VkImage image, const uint32_t width, const uint32_t height);

@@ -4,6 +4,7 @@
 #include "core/Image.h"
 #include "core/defs.h"
 #include "core/Memory.h"
+#include "core/Commands.h"
 
 
 #include <chrono>
@@ -38,9 +39,9 @@ void HelloTriangleApp::initVulkan()
 	p_context->Init();
 	const auto indices = p_context->queueFamilyIndices;
 
-	vkGetDeviceQueue(p_context->gpuInfo.device, indices.graphicsFamily.value(), 0, &graphicsQueue);
-	vkGetDeviceQueue(p_context->gpuInfo.device, indices.presentFamily.value(), 0, &presentQueue);
-	vkGetDeviceQueue(p_context->gpuInfo.device, indices.transferFamily.value(), 0, &transferQueue);
+	//vkGetDeviceQueue(p_context->gpuInfo.device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+	//vkGetDeviceQueue(p_context->gpuInfo.device, indices.presentFamily.value(), 0, &presentQueue);
+	//vkGetDeviceQueue(p_context->gpuInfo.device, indices.transferFamily.value(), 0, &transferQueue);
 
 	msaaSamples = p_context->renderConfig.msaaSamples;
 
@@ -616,7 +617,7 @@ VkCommandBuffer HelloTriangleApp::beginSingleTimeCommands(VkCommandPool& command
 	return commandBuffer;
 }
 
-void HelloTriangleApp::endSingleTimeCommands(VkCommandPool& commandPool, VkCommandBuffer commandBuffer)
+void HelloTriangleApp::endSingleTimeCommands(VkCommandPool& commandPool, VkCommandBuffer commandBuffer, VkQueue submitQueue)
 {
 	vkEndCommandBuffer(commandBuffer);
 
@@ -625,8 +626,8 @@ void HelloTriangleApp::endSingleTimeCommands(VkCommandPool& commandPool, VkComma
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
-	vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(graphicsQueue);
+	vkQueueSubmit(submitQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(submitQueue);
 
 	vkFreeCommandBuffers(p_context->gpuInfo.device, commandPool, 1, &commandBuffer);
 }
@@ -678,7 +679,7 @@ void HelloTriangleApp::transitionImageLayout(const VkImage image, const VkFormat
 
 	vkCmdPipelineBarrier(commandBuffer, srcFlags, dstFlags, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-	endSingleTimeCommands(transferCommandPool, commandBuffer);
+	endSingleTimeCommands(transferCommandPool, commandBuffer, p_context->transferQueue);
 }
 
 
@@ -703,7 +704,7 @@ void HelloTriangleApp::copyBufferToImage(VkBuffer buffer, VkImage image, const u
 	// currently assumes layout has been transistioned to this state
 	vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-	endSingleTimeCommands(transferCommandPool, commandBuffer);
+	endSingleTimeCommands(transferCommandPool, commandBuffer, p_context->transferQueue);
 }
 
 
@@ -801,7 +802,7 @@ void HelloTriangleApp::generateMipMaps(VkImage image, const VkFormat format, con
 	vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
 		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-	endSingleTimeCommands(commandPool, commandBuffer);
+	endSingleTimeCommands(commandPool, commandBuffer, p_context->graphicsQueue);
 
 }
 
@@ -952,9 +953,9 @@ void HelloTriangleApp::createVertexBuffer()
 
 	vkDestroyBuffer(p_context->gpuInfo.device, stagingBuffer, nullptr);
 	vkFreeMemory(p_context->gpuInfo.device, stagingBufferMemory, nullptr);
-
+	/*
 	Djinn::BufferCreateInfo bufferCreateInfo{};
-	bufferCreateInfo.size = sizeof(vertices[0] * vertices.size());
+	bufferCreateInfo.size = sizeof(vertices[0]) * vertices.size();
 	bufferCreateInfo.offset = 0;
 	bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	bufferCreateInfo.properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -969,6 +970,7 @@ void HelloTriangleApp::createVertexBuffer()
 	bufferCreateInfo.properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 	bufferCreateInfo.sharingMode = p_swapChain->sharingMode;
 	_vertexBuffer.Init(p_context, bufferCreateInfo);
+	*/
 }
 
 void HelloTriangleApp::createIndexBuffer()
@@ -1154,7 +1156,7 @@ void HelloTriangleApp::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, const 
 	copyRegion.size				= size;
 	vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 	
-	endSingleTimeCommands(transferCommandPool, commandBuffer);
+	endSingleTimeCommands(transferCommandPool, commandBuffer, p_context->transferQueue);
 }
 
 
@@ -1277,7 +1279,7 @@ void HelloTriangleApp::drawFrame()
 	submitInfo.pSignalSemaphores						= &renderFinishedSemaphores[currentFrame];
 
 	vkResetFences(p_context->gpuInfo.device, 1, &inFlightFences[currentFrame]);
-	result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]);
+	result = vkQueueSubmit(p_context->graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]);
 	DJINN_VK_ASSERT(result);
  
 	// if RENDER_FINISHED - we can present the image to the screen
@@ -1290,7 +1292,7 @@ void HelloTriangleApp::drawFrame()
 	presentInfo.pImageIndices							= &imageIndex;
 	presentInfo.pResults								= nullptr;		// Optional
 
-	result = vkQueuePresentKHR(presentQueue, &presentInfo);
+	result = vkQueuePresentKHR(p_context->presentQueue, &presentInfo);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || p_context->framebufferResized)
 	{

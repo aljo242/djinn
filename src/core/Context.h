@@ -63,6 +63,10 @@ namespace Djinn
 		GPU_Info gpuInfo{};
 		QueueFamilyIndices queueFamilyIndices;
 
+		VkQueue graphicsQueue;
+		VkQueue presentQueue;
+		VkQueue transferQueue;
+
 	private:
 		DebugMessenger<DebugLevel::warning> debugMessenger{};
 	};

@@ -193,6 +193,11 @@ void Djinn::Context::Init()
 
 	result = vkCreateDevice(gpuInfo.gpu, &deviceCreateInfo, nullptr, &gpuInfo.device);
 	DJINN_VK_ASSERT(result);
+
+	// GET QUEUES
+	vkGetDeviceQueue(gpuInfo.device, queueFamilyIndices.graphicsFamily.value(), 0, &graphicsQueue);
+	vkGetDeviceQueue(gpuInfo.device, queueFamilyIndices.presentFamily.value(), 0, &presentQueue);
+	vkGetDeviceQueue(gpuInfo.device, queueFamilyIndices.transferFamily.value(), 0, &transferQueue);
 }
 
 
