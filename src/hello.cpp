@@ -3,6 +3,7 @@
 #include "core/SwapChain.h"
 #include "core/Image.h"
 #include "core/defs.h"
+#include "core/Memory.h"
 
 
 #include <chrono>
@@ -44,7 +45,7 @@ void HelloTriangleApp::initVulkan()
 	msaaSamples = p_context->renderConfig.msaaSamples;
 
 	p_swapChain = new Djinn::SwapChain(p_context);
-
+	
 	createRenderPass();			//
 	createDescriptorSetLayout();//
 	createGraphicsPipeline();	//
@@ -56,7 +57,7 @@ void HelloTriangleApp::initVulkan()
 	createTextureImage();		// 
 	createTextureImageView();	//
 	createTextureSampler();		//
-	loadModel();				//
+	loadModel(MODEL_PATH);				//
 	createVertexBuffer();		//
 	createIndexBuffer();		//
 	createUniformBuffers();		//
@@ -265,11 +266,7 @@ void HelloTriangleApp::createRenderPass()
 	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-	//std::array<VkAttachmentDescription, 3> attachments {colorAttachment, depthAttachment, colorAttachmentResolve};
 	Djinn::Array1D<VkAttachmentDescription, 3> attachments{ colorAttachment, depthAttachment, colorAttachmentResolve };
-	//attachments[0] = colorAttachment;
-	//attachments[1] = depthAttachment;
-	//attachments[2] = colorAttachmentResolve;
 
 	VkRenderPassCreateInfo renderPassInfo{};
 	renderPassInfo.sType					= VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -837,7 +834,7 @@ void HelloTriangleApp::createImage(const uint32_t width, const uint32_t height, 
 	VkMemoryAllocateInfo allocateInfo{};
 	allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocateInfo.allocationSize = memRequirements.size;
-	allocateInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+	allocateInfo.memoryTypeIndex = findMemoryType(p_context, memRequirements.memoryTypeBits, properties);
 
 	result = vkAllocateMemory(p_context->gpuInfo.device, &allocateInfo, nullptr, &imageMemory);
 	DJINN_VK_ASSERT(result);
@@ -847,16 +844,16 @@ void HelloTriangleApp::createImage(const uint32_t width, const uint32_t height, 
 }
 
 
-void HelloTriangleApp::loadModel()
+void HelloTriangleApp::loadModel(const std::string& path)
 {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
 
 	std::string err;
-	const char* path = MODEL_PATH.c_str();
+	//const char* path = MODEL_PATH.c_str();
 
-	const auto ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, path);
+	const auto ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, path.c_str());
 
 	if (!err.empty())
 	{
@@ -929,19 +926,20 @@ void HelloTriangleApp::createDescriptorSetLayout()
 
 void HelloTriangleApp::createVertexBuffer()
 {
-	const VkDeviceSize bufferSize							{sizeof(vertices[0]) * vertices.size()};
-	const VkBufferUsageFlags stagingBufferFlags				{VK_BUFFER_USAGE_TRANSFER_SRC_BIT};
-	const VkMemoryPropertyFlags	stagingMemoryFlags			{ VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+	const VkDeviceSize bufferSize{ sizeof(vertices[0]) * vertices.size() };
+	const VkBufferUsageFlags stagingBufferFlags{ VK_BUFFER_USAGE_TRANSFER_SRC_BIT };
+	const VkMemoryPropertyFlags	stagingMemoryFlags{ VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
 															VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
 
-	const VkBufferUsageFlags vertexBufferFlags				{ VK_BUFFER_USAGE_TRANSFER_DST_BIT | 
+	const VkBufferUsageFlags vertexBufferFlags{ VK_BUFFER_USAGE_TRANSFER_DST_BIT |
 															VK_BUFFER_USAGE_VERTEX_BUFFER_BIT };
-	const VkMemoryPropertyFlags	vertexMemoryFlags			{ VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT };
+	const VkMemoryPropertyFlags	vertexMemoryFlags{ VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT };
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 
 	createBuffer(bufferSize, stagingBufferFlags, stagingMemoryFlags, stagingBuffer, stagingBufferMemory, 0);
+
 
 	void* data;
 	vkMapMemory(p_context->gpuInfo.device, stagingBufferMemory, 0, bufferSize, 0, &data);
@@ -954,6 +952,23 @@ void HelloTriangleApp::createVertexBuffer()
 
 	vkDestroyBuffer(p_context->gpuInfo.device, stagingBuffer, nullptr);
 	vkFreeMemory(p_context->gpuInfo.device, stagingBufferMemory, nullptr);
+
+	Djinn::BufferCreateInfo bufferCreateInfo{};
+	bufferCreateInfo.size = sizeof(vertices[0] * vertices.size());
+	bufferCreateInfo.offset = 0;
+	bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	bufferCreateInfo.properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	bufferCreateInfo.sharingMode = p_swapChain->sharingMode;
+
+	Djinn::Buffer _stagingBuffer;
+	_stagingBuffer.Init(p_context, bufferCreateInfo);
+
+	bufferCreateInfo.size = sizeof(vertices[0]) * vertices.size();
+	bufferCreateInfo.offset = 0;
+	bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	bufferCreateInfo.properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	bufferCreateInfo.sharingMode = p_swapChain->sharingMode;
+	_vertexBuffer.Init(p_context, bufferCreateInfo);
 }
 
 void HelloTriangleApp::createIndexBuffer()
@@ -1120,7 +1135,7 @@ void HelloTriangleApp::createBuffer(const VkDeviceSize size, VkBufferUsageFlags 
 	VkMemoryAllocateInfo allocInfo{};
 	allocInfo.sType							= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize				= memRequirements.size;
-	allocInfo.memoryTypeIndex				= findMemoryType(memRequirements.memoryTypeBits, properties);
+	allocInfo.memoryTypeIndex				= findMemoryType(p_context, memRequirements.memoryTypeBits, properties);
 
 	// TODO : make custom allocator that manages this memory and passes offsets
 	result	= vkAllocateMemory(p_context->gpuInfo.device, &allocInfo, nullptr, &bufferMemory);
@@ -1142,23 +1157,7 @@ void HelloTriangleApp::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, const 
 	endSingleTimeCommands(transferCommandPool, commandBuffer);
 }
 
-uint32_t HelloTriangleApp::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
-{
-	const auto memProperties = p_context->gpuInfo.memProperties;
 
-	for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
-	{
-		bool memDetect { (typeFilter & (1 << i)) && ((memProperties.memoryTypes[i].propertyFlags & properties) == properties) };
-		if (memDetect)
-		{
-			return i;
-		}
-	}
-
-	throw std::runtime_error("Failed to find suitable memory type!");
-
-	return 0;
-}
 
 void HelloTriangleApp::createCommandBuffers()
 {

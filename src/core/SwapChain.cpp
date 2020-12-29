@@ -17,10 +17,10 @@ Djinn::SwapChain::SwapChain(Context* p_context)
 
 void Djinn::SwapChain::Init(Context* p_context)
 {
-	SwapChainSupportDetails swapChainSupport{ querySwapChainSupport(p_context) };
-	VkSurfaceFormatKHR surfaceFormat{ chooseSwapChainFormat(swapChainSupport.formats) };
-	VkPresentModeKHR presentMode{ chooseSwapChainPresentMode(swapChainSupport.presentModes) };
-	VkExtent2D extent{ chooseSwapChainExtent(p_context, swapChainSupport.capabilities) };
+	const SwapChainSupportDetails swapChainSupport{ querySwapChainSupport(p_context) };
+	const VkSurfaceFormatKHR surfaceFormat{ chooseSwapChainFormat(swapChainSupport.formats) };
+	const VkPresentModeKHR presentMode{ chooseSwapChainPresentMode(swapChainSupport.presentModes) };
+	const VkExtent2D extent{ chooseSwapChainExtent(p_context, swapChainSupport.capabilities) };
 
 	uint32_t imageCount{ swapChainSupport.capabilities.minImageCount + 1 };
 
@@ -42,7 +42,8 @@ void Djinn::SwapChain::Init(Context* p_context)
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT; 
 
 	// TODO REVISIT imageSharingMode 
-	QueueFamilyIndices indices{ findQueueFamilies(p_context->gpuInfo.gpu, p_context->surface) };
+	//QueueFamilyIndices indices{ findQueueFamilies(p_context->gpuInfo.gpu, p_context->surface) };
+	QueueFamilyIndices indices = p_context->queueFamilyIndices;
 	const Djinn::Array1D<uint32_t, 2> queueFamilyIndices{ indices.graphicsFamily.value(), indices.transferFamily.value() };
 
 	if (!indices.sameIndices())
@@ -77,6 +78,7 @@ void Djinn::SwapChain::Init(Context* p_context)
 
 	createSwapChainImageViews(p_context);
 }
+
 
 void Djinn::SwapChain::CleanUp(Context* p_context)
 {

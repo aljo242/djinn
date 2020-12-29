@@ -15,6 +15,7 @@
 #include "ShaderLoader.h"
 #include "core/core.h"
 #include "core/Image.h"
+#include "core/Buffer.h"
 #include <vulkan/vulkan.h>
 #include "external/imgui/imgui.h"
 #include "external/imgui/backends/imgui_impl_vulkan.h"
@@ -136,7 +137,7 @@ private:
 	void createImage(const uint32_t width, const uint32_t height, const uint32_t mipLevels, const VkFormat format,
 		const VkSampleCountFlagBits numSamples, const VkImageTiling tiling, const VkImageUsageFlags flags, 
 		const VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
-	void loadModel();
+	void loadModel(const std::string& path);
 	void createVertexBuffer();
 	void createIndexBuffer();
 	void createUniformBuffers();
@@ -147,7 +148,7 @@ private:
 		VkBuffer& buffer, VkDeviceMemory& bufferMemory, const VkDeviceSize offset);
 	void createDescriptorSetLayout();
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, const VkDeviceSize size);
-	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+	//uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	void createCommandBuffers();
 	void createSyncObjects();
 	void drawFrame();
@@ -190,11 +191,14 @@ private:
 
 	// TODO 
 	// combine vertex and index buffer int o a single array
-	VkSharingMode sharingMode;
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
+
+	Djinn::Buffer _vertexBuffer;
+	Djinn::Buffer _indexBuffer;
+
 	std::vector<VkBuffer> uniformBuffers;
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
 
