@@ -87,10 +87,9 @@ void HelloTriangleApp::cleanup()
 	vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline, nullptr);
 	vkDestroyRenderPass(p_context->gpuInfo.device, renderPass, nullptr);
 
-	for (size_t i = 0; i < p_swapChain->swapChainImages.size(); ++i)
+	for (auto& buffer : _uniformBuffers)
 	{
-			vkDestroyBuffer(p_context->gpuInfo.device, uniformBuffers[i], nullptr);
-			vkFreeMemory(p_context->gpuInfo.device, uniformBuffersMemory[i], nullptr);
+		buffer.CleanUp(p_context);
 	}
 
 	colorImage.CleanUp(p_context);
@@ -954,7 +953,7 @@ void HelloTriangleApp::createVertexBufferStaged()
 	bufferCreateInfo.sharingMode = p_swapChain->sharingMode;
 	_vertexBuffer.Init(p_context, bufferCreateInfo);
 
-	copyToStagingBuffer(p_context, _stagingBuffer, bufferSize, 0, vertices.data());
+	copyToMappedBuffer(p_context, _stagingBuffer, bufferSize, 0, vertices.data());
 
 	copyBuffer(p_context, _stagingBuffer, _vertexBuffer, bufferSize);
 
@@ -985,7 +984,7 @@ void HelloTriangleApp::createIndexBufferStaged()
 	bufferCreateInfo.sharingMode = p_swapChain->sharingMode;
 	_indexBuffer.Init(p_context, bufferCreateInfo);
 
-	copyToStagingBuffer(p_context, _stagingBuffer, bufferSize, 0, vertexIndices.data());
+	copyToMappedBuffer(p_context, _stagingBuffer, bufferSize, 0, vertexIndices.data());
 	copyBuffer(p_context, _stagingBuffer, _indexBuffer, bufferSize);
 
 	_stagingBuffer.CleanUp(p_context);
@@ -994,19 +993,24 @@ void HelloTriangleApp::createIndexBufferStaged()
 
 void HelloTriangleApp::createUniformBuffers()
 {
-	constexpr VkDeviceSize bufferSize					{ sizeof(UniformBufferObject) };
-	const size_t swapchainSize							{ p_swapChain->swapChainImages.size()};
+	constexpr VkDeviceSize bufferSize{ sizeof(UniformBufferObject) };
+	const size_t swapchainSize{ p_swapChain->swapChainImages.size() };
 
-	constexpr VkBufferUsageFlags uniformBufferFlags		{ VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT };
-	constexpr VkMemoryPropertyFlags	uniformMemoryFlags	{ VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-														VK_MEMORY_PROPERTY_HOST_COHERENT_BIT };
 
-	uniformBuffers.resize(swapchainSize);
-	uniformBuffersMemory.resize(swapchainSize);
+	_uniformBuffers.resize(swapchainSize);
+	//uniformBuffersMemory.resize(swapchainSize);
 
-	for (size_t i = 0; i < swapchainSize; ++i)
+	Djinn::BufferCreateInfo bufferCreateInfo{};
+	bufferCreateInfo.size = bufferSize;
+	bufferCreateInfo.offset = 0;
+	bufferCreateInfo.sharingMode = p_swapChain->sharingMode;
+	bufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	bufferCreateInfo.properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+	for (auto& buffer : _uniformBuffers)
 	{
-		createBuffer(bufferSize, uniformBufferFlags, uniformMemoryFlags, uniformBuffers[i], uniformBuffersMemory[i], 0);
+		//createBuffer(bufferSize, uniformBufferFlags, uniformMemoryFlags, uniformBuffers[i], uniformBuffersMemory[i], 0);
+		buffer.Init(p_context, bufferCreateInfo);
 	}
 }
 
@@ -1045,7 +1049,7 @@ void HelloTriangleApp::createDescriptorSets()
 	for (size_t i = 0; i < p_swapChain->swapChainImages.size(); ++i)
 	{
 		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer							= uniformBuffers[i];
+		bufferInfo.buffer							= _uniformBuffers[i].buffer;
 		bufferInfo.offset							= 0;
 		bufferInfo.range							= sizeof(UniformBufferObject);
 
@@ -1096,10 +1100,11 @@ void HelloTriangleApp::updateUniformBuffer(const uint32_t imageIndex)
 	ubo.projection = glm::perspective(glm::radians(45.0f), (static_cast<float>(p_swapChain->swapChainExtent.width) / static_cast<float>(p_swapChain->swapChainExtent.height)), 0.1f, 10.0f);
 	ubo.projection[1][1] *= -1.0f;
 
-	void* data;
-	vkMapMemory(p_context->gpuInfo.device, uniformBuffersMemory[imageIndex], 0, sizeof(ubo), 0, &data);
-	memcpy(data, &ubo, sizeof(ubo));
-	vkUnmapMemory(p_context->gpuInfo.device, uniformBuffersMemory[imageIndex]);
+	//void* data;
+	//vkMapMemory(p_context->gpuInfo.device, uniformBuffersMemory[imageIndex], 0, sizeof(ubo), 0, &data);
+	//memcpy(data, &ubo, sizeof(ubo));
+	//vkUnmapMemory(p_context->gpuInfo.device, uniformBuffersMemory[imageIndex]);
+	copyToMappedBuffer(p_context, _uniformBuffers[imageIndex], sizeof(ubo), 0, &ubo);
 }
 
 

@@ -189,16 +189,13 @@ private:
 
 	// TODO 
 	// combine vertex and index buffer int o a single array
-	//VkBuffer vertexBuffer;
-	//VkDeviceMemory vertexBufferMemory;
-	//VkBuffer indexBuffer;
-	//VkDeviceMemory indexBufferMemory;
-
 	Djinn::Buffer _vertexBuffer;
 	Djinn::Buffer _indexBuffer;
 
 	std::vector<VkBuffer> uniformBuffers;
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
+
+	std::vector<Djinn::Buffer> _uniformBuffers;
 
 	VkImage textureImage;
 	uint32_t m_mipLevels;
