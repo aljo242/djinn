@@ -1009,7 +1009,6 @@ void HelloTriangleApp::createUniformBuffers()
 
 	for (auto& buffer : _uniformBuffers)
 	{
-		//createBuffer(bufferSize, uniformBufferFlags, uniformMemoryFlags, uniformBuffers[i], uniformBuffersMemory[i], 0);
 		buffer.Init(p_context, bufferCreateInfo);
 	}
 }
@@ -1100,10 +1099,6 @@ void HelloTriangleApp::updateUniformBuffer(const uint32_t imageIndex)
 	ubo.projection = glm::perspective(glm::radians(45.0f), (static_cast<float>(p_swapChain->swapChainExtent.width) / static_cast<float>(p_swapChain->swapChainExtent.height)), 0.1f, 10.0f);
 	ubo.projection[1][1] *= -1.0f;
 
-	//void* data;
-	//vkMapMemory(p_context->gpuInfo.device, uniformBuffersMemory[imageIndex], 0, sizeof(ubo), 0, &data);
-	//memcpy(data, &ubo, sizeof(ubo));
-	//vkUnmapMemory(p_context->gpuInfo.device, uniformBuffersMemory[imageIndex]);
 	copyToMappedBuffer(p_context, _uniformBuffers[imageIndex], sizeof(ubo), 0, &ubo);
 }
 

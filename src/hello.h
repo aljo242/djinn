@@ -191,10 +191,6 @@ private:
 	// combine vertex and index buffer int o a single array
 	Djinn::Buffer _vertexBuffer;
 	Djinn::Buffer _indexBuffer;
-
-	std::vector<VkBuffer> uniformBuffers;
-	std::vector<VkDeviceMemory> uniformBuffersMemory;
-
 	std::vector<Djinn::Buffer> _uniformBuffers;
 
 	VkImage textureImage;
