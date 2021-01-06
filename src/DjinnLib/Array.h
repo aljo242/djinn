@@ -13,9 +13,9 @@ namespace Djinn
 	{
 	public:
 
-		Array1D() {}
+		constexpr Array1D() {}
 
-		Array1D(std::initializer_list<T> const& list)
+		constexpr Array1D(std::initializer_list<T> const& list)
 		{
 			std::copy(list.begin(), list.end(), ptr);
 		}

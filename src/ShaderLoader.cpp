@@ -1,4 +1,5 @@
 #include "ShaderLoader.h"
+#include "core/core.h"
 
 static std::vector<char> readBinaryFile(const std::string& filename)
 {
@@ -23,25 +24,40 @@ static std::vector<char> readBinaryFile(const std::string& filename)
 	return buffer;
 }
 
-ShaderLoader::ShaderLoader(const std::string& filename, VkDevice device, const char* name)
+ShaderLoader::ShaderLoader(const std::string& filename, VkDevice device, const VkShaderStageFlagBits stageFlag)
 	:
 	m_device(device),
-	pName(name)
+	stage(stageFlag)
 {
 	code = readBinaryFile(filename);
 
-	VkShaderModuleCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	createInfo.codeSize = code.size();
-	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+	VkShaderModuleCreateInfo info{};
+	info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	info.codeSize = code.size();
+	info.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
-	if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create shader module");
-	}
+	const auto result = vkCreateShaderModule(device, &info, nullptr, &shaderModule);
+	DJINN_VK_ASSERT(result);
 }
 
-ShaderLoader::~ShaderLoader()
+
+ShaderLoader::ShaderLoader(const ShaderLoaderCreateInfo& createInfo, VkDevice device)
+	:
+	m_device(device),
+	stage(createInfo.stage)
+{
+	code = readBinaryFile(createInfo.filename);
+
+	VkShaderModuleCreateInfo info{};
+	info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	info.codeSize = code.size();
+	info.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+	const auto result = vkCreateShaderModule(device, &info, nullptr, &shaderModule);
+	DJINN_VK_ASSERT(result);
+}
+
+void ShaderLoader::DestroyModule()
 {
 	vkDestroyShaderModule(m_device, shaderModule, nullptr);
 }

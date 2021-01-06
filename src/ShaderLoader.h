@@ -6,14 +6,22 @@
 
 #include <vulkan/vulkan.h>
 
+struct ShaderLoaderCreateInfo
+{
+	std::string filename;
+	VkShaderStageFlagBits stage;
+};
+
 class ShaderLoader
 {
 public:
-	ShaderLoader(const std::string& filename, VkDevice device, const char* name = "main");
-	~ShaderLoader();
+	ShaderLoader(const std::string& filename, VkDevice device, const VkShaderStageFlagBits stageFlag);
+	ShaderLoader(const ShaderLoaderCreateInfo& createInfo, VkDevice device);
+	void DestroyModule();
 
 	VkShaderModule shaderModule{VK_NULL_HANDLE};
-	const char* pName;
+	VkShaderStageFlagBits stage;
+	const char* pName = "main";
 
 private:
 	std::vector<char> code;

@@ -37,7 +37,7 @@ namespace Djinn
 
 	void copyBuffer(Djinn::Context* p_context, VkBuffer srcBuffer, VkBuffer dstBuffer, const VkDeviceSize size);
 	void copyBuffer(Djinn::Context* p_context, Djinn::Buffer srcBuffer, Djinn::Buffer dstBuffer, const VkDeviceSize size);
-	void copyToMappedBuffer(Djinn::Context* p_context, Djinn::Buffer& stagingBuffer, const VkDeviceSize bufferSize, const VkDeviceSize offset, void* src);
+	void copyDataToMappedBuffer(Djinn::Context* p_context, Djinn::Buffer& stagingBuffer, const VkDeviceSize bufferSize, const VkDeviceSize offset, void* src);
 
 }
 

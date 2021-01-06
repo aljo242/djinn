@@ -6,7 +6,6 @@
 #include "core/Memory.h"
 #include "core/Commands.h"
 
-
 #include <chrono>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -83,8 +82,8 @@ void HelloTriangleApp::cleanup()
 	vkDeviceWaitIdle(p_context->gpuInfo.device);
 
 	//cleanupSwapChain();
-	vkDestroyPipelineLayout(p_context->gpuInfo.device, pipelineLayout, nullptr);
-	vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline, nullptr);
+	vkDestroyPipelineLayout(p_context->gpuInfo.device, graphicsPipeline.pipelineLayout, nullptr);
+	vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline.pipeline, nullptr);
 	vkDestroyRenderPass(p_context->gpuInfo.device, renderPass, nullptr);
 
 	for (auto& buffer : _uniformBuffers)
@@ -166,8 +165,8 @@ void HelloTriangleApp::cleanupSwapChain()
 	p_swapChain->CleanUp(p_context);
 
 	vkFreeCommandBuffers(p_context->gpuInfo.device, p_context->graphicsCommandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-	vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(p_context->gpuInfo.device, pipelineLayout, nullptr);
+	vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline.pipeline, nullptr);
+	vkDestroyPipelineLayout(p_context->gpuInfo.device, graphicsPipeline.pipelineLayout, nullptr);
 	vkDestroyRenderPass(p_context->gpuInfo.device, renderPass, nullptr);
 
 	colorImage.CleanUp(p_context);
@@ -281,185 +280,26 @@ void HelloTriangleApp::createRenderPass()
 
 void HelloTriangleApp::createGraphicsPipeline()
 {
-	ShaderLoader vertShader("shader/vert.spv", p_context->gpuInfo.device);
-	ShaderLoader fragShader("shader/frag.spv", p_context->gpuInfo.device);
+	ShaderLoader vertShader("shader/vert.spv", p_context->gpuInfo.device, VK_SHADER_STAGE_VERTEX_BIT);
+	ShaderLoader fragShader("shader/frag.spv", p_context->gpuInfo.device, VK_SHADER_STAGE_FRAGMENT_BIT);
+	
+	Djinn::GraphicsPipelineBuilder graphicsPipelineBuilder;
+	Djinn::PipelineConfig pipelineConfig;
+	pipelineConfig.descriptorSetLayouts.push_back(descriptorSetLayout);
+	pipelineConfig.msaaSamples = msaaSamples;
+	pipelineConfig.polygonMode = VK_POLYGON_MODE_FILL;
+	pipelineConfig.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	pipelineConfig.renderPass = renderPass;
+	pipelineConfig.shaderLoaders.push_back(vertShader);
+	pipelineConfig.shaderLoaders.push_back(fragShader);
 
-	VkPipelineShaderStageCreateInfo vertShaderStageCreateInfo{};
-	vertShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	vertShaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vertShaderStageCreateInfo.module = vertShader.shaderModule;
-	vertShaderStageCreateInfo.pName = vertShader.pName;
-
-	VkPipelineShaderStageCreateInfo fragShaderStageCreateInfo{};
-	fragShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	fragShaderStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragShaderStageCreateInfo.module = fragShader.shaderModule;
-	fragShaderStageCreateInfo.pName = fragShader.pName;
-
-	VkPipelineShaderStageCreateInfo shaderStages[]{ vertShaderStageCreateInfo, fragShaderStageCreateInfo };
-
-	const auto bindingDescription		{Vertex::getBindingDescription() };
-	const auto attributeDescriptions	{Vertex::getAttributeDescriptions()};
-
-	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
-	vertexInputCreateInfo.sType							= VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
-	vertexInputCreateInfo.pVertexBindingDescriptions	= &bindingDescription;
-	vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.NumElem());
-	vertexInputCreateInfo.pVertexAttributeDescriptions	= attributeDescriptions.Ptr();
-
-	// triangle list with no index buffer
-	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
-	inputAssemblyCreateInfo.sType						= VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	inputAssemblyCreateInfo.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	inputAssemblyCreateInfo.primitiveRestartEnable		= VK_FALSE;
-
-	VkViewport viewport{};
-	viewport.x											= 0.0f;
-	viewport.y											= 0.0f;
-	viewport.width										= static_cast<float>(p_swapChain->swapChainExtent.width);
-	viewport.height										= static_cast<float>(p_swapChain->swapChainExtent.height);
-	viewport.minDepth									= 0.0f;
-	viewport.maxDepth									= 1.0f;
-
-	VkRect2D scissor{};
-	scissor.offset										= {0, 0};
-	scissor.extent										= p_swapChain->swapChainExtent;
-
-	VkPipelineViewportStateCreateInfo viewportStateCreateInfo{};
-	viewportStateCreateInfo.sType						= VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	viewportStateCreateInfo.viewportCount				= 1;
-	viewportStateCreateInfo.pViewports					= &viewport;
-	viewportStateCreateInfo.scissorCount				= 1;
-	viewportStateCreateInfo.pScissors					= &scissor;
-
-	VkPipelineRasterizationStateCreateInfo rasterizer{};
-	rasterizer.sType									= VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	rasterizer.depthClampEnable							= VK_FALSE;
-	rasterizer.rasterizerDiscardEnable					= VK_FALSE;
-	rasterizer.polygonMode								= VK_POLYGON_MODE_FILL;
-	rasterizer.lineWidth								= 1.0f;
-	rasterizer.cullMode									= VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace								= VK_FRONT_FACE_COUNTER_CLOCKWISE;
-
-	// used during shadow mapping
-	rasterizer.depthBiasEnable							= VK_FALSE;
-	rasterizer.depthBiasConstantFactor					= 0.0f; // Optional
-	rasterizer.depthBiasClamp							= 0.0f; // Optional
-	rasterizer.depthBiasSlopeFactor						= 0.0f; // Optional
-
-	VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
-	multisamplingCreateInfo.sType						= VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	multisamplingCreateInfo.sampleShadingEnable			= VK_TRUE;
-	multisamplingCreateInfo.rasterizationSamples		= msaaSamples;
-	multisamplingCreateInfo.minSampleShading			= 0.2f;		// Optional
-	multisamplingCreateInfo.pSampleMask					= nullptr;	// Optional
-	multisamplingCreateInfo.alphaToCoverageEnable		= VK_FALSE; // Optional
-	multisamplingCreateInfo.alphaToOneEnable			= VK_FALSE; // Optional
-
-	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-	colorBlendAttachment.colorWriteMask					= VK_COLOR_COMPONENT_R_BIT |
-														  VK_COLOR_COMPONENT_G_BIT |
-														  VK_COLOR_COMPONENT_B_BIT |															 
-														  VK_COLOR_COMPONENT_A_BIT;
-
-	// alpha blending
-	colorBlendAttachment.blendEnable					= VK_TRUE;
-	colorBlendAttachment.srcColorBlendFactor			= VK_BLEND_FACTOR_SRC_ALPHA;  // Optional
-	colorBlendAttachment.dstColorBlendFactor			= VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; // Optional
-	colorBlendAttachment.colorBlendOp					= VK_BLEND_OP_ADD;		// Optional
-	colorBlendAttachment.srcAlphaBlendFactor			= VK_BLEND_FACTOR_ONE;  // Optional
-	colorBlendAttachment.dstAlphaBlendFactor			= VK_BLEND_FACTOR_ZERO; // Optional
-	colorBlendAttachment.alphaBlendOp					= VK_BLEND_OP_ADD;		// Optional
-
-	VkPipelineColorBlendStateCreateInfo colorBlendingCreateInfo{};
-	colorBlendingCreateInfo.sType						= VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	colorBlendingCreateInfo.logicOpEnable				= VK_FALSE;
-	colorBlendingCreateInfo.logicOp						= VK_LOGIC_OP_COPY;		// Optional
-	colorBlendingCreateInfo.attachmentCount				= 1;
-	colorBlendingCreateInfo.pAttachments				= &colorBlendAttachment;
-	colorBlendingCreateInfo.blendConstants[0]			= 0.0f;					// Optional
-	colorBlendingCreateInfo.blendConstants[1]			= 0.0f;					// Optional
-	colorBlendingCreateInfo.blendConstants[2]			= 0.0f;					// Optional
-	colorBlendingCreateInfo.blendConstants[3]			= 0.0f;					// Optional
-
-	constexpr size_t dynamicStatesSize					{2};
-	VkDynamicState dynamicStates[dynamicStatesSize]		{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH};
-
-	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
-	dynamicStateCreateInfo.sType						= VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	dynamicStateCreateInfo.dynamicStateCount			= dynamicStatesSize;
-	dynamicStateCreateInfo.pDynamicStates				= dynamicStates;
-
-	// create depthStencil
-	// convention used: LOWER DEPTH == CLOSER TO CAMERA
-	VkPipelineDepthStencilStateCreateInfo depthStencil{};
-	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	depthStencil.depthTestEnable = VK_TRUE;
-	depthStencil.depthWriteEnable = VK_TRUE;
-	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-	depthStencil.depthBoundsTestEnable = VK_FALSE;
-	depthStencil.minDepthBounds = 0.0f;
-	depthStencil.maxDepthBounds = 1.0f;
-	depthStencil.stencilTestEnable = VK_FALSE;
-
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.sType							= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount					= 1;					
-	pipelineLayoutInfo.pSetLayouts						= &descriptorSetLayout;				
-	pipelineLayoutInfo.pushConstantRangeCount			= 0;					// Optional
-	pipelineLayoutInfo.pPushConstantRanges				= nullptr;				// Optional
-
-	auto result {(vkCreatePipelineLayout(p_context->gpuInfo.device, &pipelineLayoutInfo, nullptr, &pipelineLayout))};
-	DJINN_VK_ASSERT(result);
-
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
-	pipelineCreateInfo.sType							= VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineCreateInfo.stageCount						= dynamicStatesSize;
-	pipelineCreateInfo.pStages							= shaderStages;
-	pipelineCreateInfo.pVertexInputState				= &vertexInputCreateInfo;
-	pipelineCreateInfo.pInputAssemblyState				= &inputAssemblyCreateInfo;
-	pipelineCreateInfo.pViewportState					= &viewportStateCreateInfo;
-	pipelineCreateInfo.pRasterizationState				= &rasterizer;
-	pipelineCreateInfo.pMultisampleState				= &multisamplingCreateInfo;
-	pipelineCreateInfo.pDepthStencilState				= nullptr;				// Optional
-	pipelineCreateInfo.pColorBlendState					= &colorBlendingCreateInfo; 
-	pipelineCreateInfo.pDynamicState					= nullptr;				// Optional
-	pipelineCreateInfo.layout							= pipelineLayout;
-	pipelineCreateInfo.pDepthStencilState				= &depthStencil;
-	pipelineCreateInfo.renderPass						= renderPass;
-	pipelineCreateInfo.subpass							= 0;
-	pipelineCreateInfo.basePipelineHandle				= VK_NULL_HANDLE;		// Optional
-	pipelineCreateInfo.basePipelineIndex				= -1;					// Optional
-
-	result = (vkCreateGraphicsPipelines(p_context->gpuInfo.device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &graphicsPipeline));
-	DJINN_VK_ASSERT(result);
+	graphicsPipeline = graphicsPipelineBuilder.BuildPipeline(p_context, p_swapChain, pipelineConfig);
+	
+	// cleanup
+	vertShader.DestroyModule();
+	fragShader.DestroyModule();
 }
 
-/*
-void HelloTriangleApp::createCommandPool()
-{
-	const auto graphicsFamilyIndex = p_context->queueFamilyIndices.graphicsFamily.value();
-	const auto transferFamilyIndex = p_context->queueFamilyIndices.transferFamily.value();
-
-	VkCommandPoolCreateInfo poolCreateInfo{};
-	poolCreateInfo.sType								= VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolCreateInfo.queueFamilyIndex						= graphicsFamilyIndex;
-	poolCreateInfo.flags								= VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
-	auto result {(vkCreateCommandPool(p_context->gpuInfo.device, &poolCreateInfo, nullptr, &gfxCommandPool))};
-	DJINN_VK_ASSERT(result);
-
-	// transfer pool
-	poolCreateInfo.queueFamilyIndex = transferFamilyIndex;
-
-	// transfer commands are short-lived, so this hint could lead to allocation optimizations
-	poolCreateInfo.flags								= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-
-	result = (vkCreateCommandPool(p_context->gpuInfo.device, &poolCreateInfo, nullptr, &transferCommandPool));
-	DJINN_VK_ASSERT(result);
-}
-*/
 
 void HelloTriangleApp::createDepthResources()
 {
@@ -508,7 +348,6 @@ void HelloTriangleApp::createTextureImage()
 	createImage(texWidth, texHeight, m_mipLevels, VK_FORMAT_R8G8B8A8_SRGB, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
-
 
 	// transition image to transfer dst -> copy to image -> transfer to shader read only to sample from
 	transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_mipLevels);
@@ -953,8 +792,7 @@ void HelloTriangleApp::createVertexBufferStaged()
 	bufferCreateInfo.sharingMode = p_swapChain->sharingMode;
 	_vertexBuffer.Init(p_context, bufferCreateInfo);
 
-	copyToMappedBuffer(p_context, _stagingBuffer, bufferSize, 0, vertices.data());
-
+	copyDataToMappedBuffer(p_context, _stagingBuffer, bufferSize, 0, vertices.data());
 	copyBuffer(p_context, _stagingBuffer, _vertexBuffer, bufferSize);
 
 	_stagingBuffer.CleanUp(p_context);
@@ -984,7 +822,7 @@ void HelloTriangleApp::createIndexBufferStaged()
 	bufferCreateInfo.sharingMode = p_swapChain->sharingMode;
 	_indexBuffer.Init(p_context, bufferCreateInfo);
 
-	copyToMappedBuffer(p_context, _stagingBuffer, bufferSize, 0, vertexIndices.data());
+	copyDataToMappedBuffer(p_context, _stagingBuffer, bufferSize, 0, vertexIndices.data());
 	copyBuffer(p_context, _stagingBuffer, _indexBuffer, bufferSize);
 
 	_stagingBuffer.CleanUp(p_context);
@@ -1099,7 +937,7 @@ void HelloTriangleApp::updateUniformBuffer(const uint32_t imageIndex)
 	ubo.projection = glm::perspective(glm::radians(45.0f), (static_cast<float>(p_swapChain->swapChainExtent.width) / static_cast<float>(p_swapChain->swapChainExtent.height)), 0.1f, 10.0f);
 	ubo.projection[1][1] *= -1.0f;
 
-	copyToMappedBuffer(p_context, _uniformBuffers[imageIndex], sizeof(ubo), 0, &ubo);
+	copyDataToMappedBuffer(p_context, _uniformBuffers[imageIndex], sizeof(ubo), 0, &ubo);
 }
 
 
@@ -1195,14 +1033,14 @@ void HelloTriangleApp::createCommandBuffers()
 		renderPassInfo.pClearValues						= clearValues.Ptr();
 
 		vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+		vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
 
 		VkBuffer vertexBuffers[] {_vertexBuffer.buffer};
 		VkDeviceSize offsets[]	{0};
 		vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 		vkCmdBindIndexBuffer(commandBuffers[i], _indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
 
 		vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(vertexIndices.size()), 1, 0, 0, 0);
 		vkCmdEndRenderPass(commandBuffers[i]);

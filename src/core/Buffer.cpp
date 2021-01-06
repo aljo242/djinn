@@ -84,7 +84,7 @@ void Djinn::copyBuffer(Context* p_context, Buffer srcBuffer, Buffer dstBuffer, c
 	endSingleTimeCommands(p_context, p_context->transferCommandPool, commandBuffer, p_context->transferQueue);
 }
 
-void Djinn::copyToMappedBuffer(Djinn::Context* p_context, Djinn::Buffer& stagingBuffer, const VkDeviceSize bufferSize, const VkDeviceSize offset, void* src)
+void Djinn::copyDataToMappedBuffer(Djinn::Context* p_context, Djinn::Buffer& stagingBuffer, const VkDeviceSize bufferSize, const VkDeviceSize offset, void* src)
 {
 	void* dest;
 	vkMapMemory(p_context->gpuInfo.device, stagingBuffer.bufferMemory, 0, bufferSize, 0, &dest);
