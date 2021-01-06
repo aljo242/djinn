@@ -22,6 +22,7 @@ HelloTriangleApp::HelloTriangleApp()
 
 HelloTriangleApp::~HelloTriangleApp()
 {
+	delete p_swapChain;
 	delete p_context;
 }
 
