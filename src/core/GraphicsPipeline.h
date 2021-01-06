@@ -32,7 +32,6 @@ namespace Djinn
 	{
 	public:
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStageInfo{};
-		VkPipelineLayout pipelineLayout{};
 		VkPipelineMultisampleStateCreateInfo multisamplingInfo{};
 		VkPipelineRasterizationStateCreateInfo rasterizerInfo{};
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};

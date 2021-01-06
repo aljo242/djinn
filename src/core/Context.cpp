@@ -457,6 +457,9 @@ VkPhysicalDeviceFeatures Djinn::Context::populateDeviceFeatures()
 	// anisotropic filtering
 	deviceFeatures.samplerAnisotropy = VK_TRUE;
 
+	// enable wireframe
+	deviceFeatures.fillModeNonSolid = VK_TRUE;
+
 	return deviceFeatures;
 }
 

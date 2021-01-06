@@ -34,8 +34,6 @@ namespace Djinn
 	class SwapChain;
 }
 
-
-
 class HelloTriangleApp
 {
 public:

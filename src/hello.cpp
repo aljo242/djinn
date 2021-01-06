@@ -288,7 +288,7 @@ void HelloTriangleApp::createGraphicsPipeline()
 	Djinn::PipelineConfig pipelineConfig;
 	pipelineConfig.descriptorSetLayouts.push_back(descriptorSetLayout);
 	pipelineConfig.msaaSamples = msaaSamples;
-	pipelineConfig.polygonMode = VK_POLYGON_MODE_FILL;
+	pipelineConfig.polygonMode = VK_POLYGON_MODE_LINE;
 	pipelineConfig.primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	pipelineConfig.renderPass = renderPass;
 	pipelineConfig.shaderLoaders.push_back(vertShader);
