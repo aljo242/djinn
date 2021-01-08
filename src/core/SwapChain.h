@@ -16,8 +16,8 @@ namespace Djinn
 		SwapChain(Context* p_context);
 		void Init(Context* p_context);
 		void CleanUp(Context* p_context);
-		void createFramebuffers(Context* p_context, VkImageView& colorImageView, VkImageView& depthImageView, VkRenderPass& renderPass);
-		void createFramebuffers(Context* p_context, Image* colorImage, Image* depthImage, VkRenderPass& renderPass);
+		void createFramebuffers(Context* p_context, VkImageView& colorImageView, VkImageView& depthImageView, Djinn::RenderPass renderPass);
+		void createFramebuffers(Context* p_context, Image* colorImage, Image* depthImage, Djinn::RenderPass renderPass);
 
 
 	private:

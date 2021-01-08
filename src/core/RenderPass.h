@@ -5,6 +5,8 @@
 
 namespace Djinn
 {
+	class Context;
+
 	struct RenderPassConfig
 	{
 		VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -15,14 +17,14 @@ namespace Djinn
 	class RenderPass
 	{
 	public:
-
-	private:
+		RenderPass() = default;
+		RenderPass(Djinn::Context* p_context, const RenderPassConfig& config);
+		void Init(Djinn::Context* p_context, const RenderPassConfig& config);
+		void CleanUp(Djinn::Context* p_context);
 
 
 	public:
-		VkRenderPass renderPass{ VK_NULL_HANDLE };
-
-	private:
+		VkRenderPass handle{ VK_NULL_HANDLE };
 	};
 }
 

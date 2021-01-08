@@ -116,7 +116,7 @@ void Djinn::SwapChain::createSwapChainImageViews(Context* p_context)
 }
 
 
-void Djinn::SwapChain::createFramebuffers(Context* p_context, Image* colorImage, Image* depthImage, VkRenderPass& renderPass)
+void Djinn::SwapChain::createFramebuffers(Context* p_context, Image* colorImage, Image* depthImage, Djinn::RenderPass renderPass)
 {
 	swapChainFramebuffers.resize(swapChainImageViews.size());
 
@@ -131,7 +131,7 @@ void Djinn::SwapChain::createFramebuffers(Context* p_context, Image* colorImage,
 
 		VkFramebufferCreateInfo framebufferCreateInfo{};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferCreateInfo.renderPass = renderPass;
+		framebufferCreateInfo.renderPass = renderPass.handle;
 		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.NumElem());
 		framebufferCreateInfo.pAttachments = attachments.Ptr();
 		framebufferCreateInfo.width = swapChainExtent.width;
@@ -144,7 +144,7 @@ void Djinn::SwapChain::createFramebuffers(Context* p_context, Image* colorImage,
 }
 
 
-void Djinn::SwapChain::createFramebuffers(Context* p_context, VkImageView& colorImageView, VkImageView& depthImageView, VkRenderPass& renderPass)
+void Djinn::SwapChain::createFramebuffers(Context* p_context, VkImageView& colorImageView, VkImageView& depthImageView, Djinn::RenderPass renderPass)
 {
 	swapChainFramebuffers.resize(swapChainImageViews.size());
 
@@ -159,7 +159,7 @@ void Djinn::SwapChain::createFramebuffers(Context* p_context, VkImageView& color
 
 		VkFramebufferCreateInfo framebufferCreateInfo{};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferCreateInfo.renderPass = renderPass;
+		framebufferCreateInfo.renderPass = renderPass.handle;
 		framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.NumElem());
 		framebufferCreateInfo.pAttachments = attachments.Ptr();
 		framebufferCreateInfo.width = swapChainExtent.width;

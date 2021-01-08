@@ -1,4 +1,4 @@
-#include "hello.h"
+#include "VulkanEngine.h"
 
 int main()
 {
@@ -6,7 +6,7 @@ int main()
 	spdlog::set_level(spdlog::level::debug);
 #endif
 
-	HelloTriangleApp app;
+	Djinn::VulkanEngine app;
 
 	try
 	{
