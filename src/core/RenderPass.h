@@ -5,6 +5,13 @@
 
 namespace Djinn
 {
+	struct RenderPassConfig
+	{
+		VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+		VkFormat swapChainFormat;
+		VkFormat depthFormat;
+	};
+
 	class RenderPass
 	{
 	public:

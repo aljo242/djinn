@@ -125,40 +125,6 @@ void HelloTriangleApp::cleanup()
 	p_context->CleanUp();
 }
 
-VkFormat HelloTriangleApp::findSupportedFormat(const std::vector<VkFormat>& candidates, const VkImageTiling tiling, const VkFormatFeatureFlags features)
-{
-	for (const auto& format : candidates)
-	{
-		VkFormatProperties props;
-		vkGetPhysicalDeviceFormatProperties(p_context->gpuInfo.gpu, format, &props);
-
-		if ((tiling == VK_IMAGE_TILING_LINEAR) && (props.linearTilingFeatures & features) == features)
-		{
-			return format;
-		}
-		else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
-		{
-			return format;
-		}
-	}
-
-	throw std::runtime_error("Could not find supported format!");
-}
-
-VkFormat HelloTriangleApp::findDepthFormat()
-{
-	return findSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-		VK_IMAGE_TILING_OPTIMAL,
-		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-	);
-}
-
-bool HelloTriangleApp::hasStencilComponent(const VkFormat format)
-{
-	return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
-}
-
-
 
 
 void HelloTriangleApp::cleanupSwapChain()
@@ -213,7 +179,7 @@ void HelloTriangleApp::createRenderPass()
 	colorAttachment.finalLayout				= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	VkAttachmentDescription depthAttachment{};
-	depthAttachment.format = findDepthFormat();
+	depthAttachment.format = Djinn::findDepthFormat(p_context);
 	depthAttachment.samples = msaaSamples;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -304,7 +270,7 @@ void HelloTriangleApp::createGraphicsPipeline()
 
 void HelloTriangleApp::createDepthResources()
 {
-	const auto depthFormat {findDepthFormat()};
+	const auto depthFormat {Djinn::findDepthFormat(p_context)};
 
 	Djinn::ImageCreateInfo createInfo{};
 	createInfo.width = p_swapChain->swapChainExtent.width;
@@ -734,15 +700,6 @@ void HelloTriangleApp::loadModel(const std::string& path)
 	}
 }
 
-void HelloTriangleApp::createVertexBuffer()
-{
-
-}
-
-void HelloTriangleApp::createIndexBuffer()
-{
-
-}
 
 void HelloTriangleApp::createDescriptorSetLayout()
 {
@@ -974,20 +931,6 @@ void HelloTriangleApp::createBuffer(const VkDeviceSize size, VkBufferUsageFlags 
 
 	vkBindBufferMemory(p_context->gpuInfo.device, buffer, bufferMemory, offset);
 }
-/*
-void HelloTriangleApp::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, const VkDeviceSize size)
-{
-	VkCommandBuffer commandBuffer {beginSingleTimeCommands(transferCommandPool)};
-
-	VkBufferCopy copyRegion;
-	copyRegion.srcOffset		= 0;
-	copyRegion.dstOffset		= 0;
-	copyRegion.size				= size;
-	vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-	
-	endSingleTimeCommands(transferCommandPool, commandBuffer, p_context->transferQueue);
-}*/
-
 
 
 void HelloTriangleApp::createCommandBuffers()

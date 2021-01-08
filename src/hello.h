@@ -46,11 +46,6 @@ private:
 	void mainLoop();
 	void cleanup();
 
-	// TODO expand this
-	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, const VkImageTiling tiling,
-		const VkFormatFeatureFlags features);
-	VkFormat findDepthFormat();
-	bool hasStencilComponent(const VkFormat format);
 	// Swap Chain Extent is the resolution of the swap chain buffer image
 	void cleanupSwapChain();
 	void recreateSwapChain();
@@ -73,8 +68,6 @@ private:
 		const VkSampleCountFlagBits numSamples, const VkImageTiling tiling, const VkImageUsageFlags flags, 
 		const VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 	void loadModel(const std::string& path);
-	void createVertexBuffer();
-	void createIndexBuffer();
 	void createVertexBufferStaged();
 	void createIndexBufferStaged();
 	void createUniformBuffers();
