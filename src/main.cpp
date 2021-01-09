@@ -1,4 +1,4 @@
-#include "VulkanEngine.h"
+#include "App.h"
 
 int main()
 {
@@ -6,11 +6,13 @@ int main()
 	spdlog::set_level(spdlog::level::debug);
 #endif
 
-	Djinn::VulkanEngine app;
+	Djinn::App app;
 
 	try
 	{
-		app.run();
+		app.Init();
+		app.Run();
+		app.CleanUp();
 	}
 	catch (const std::exception& e)
 	{
