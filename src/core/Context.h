@@ -83,6 +83,15 @@ namespace Djinn
 		auto app{ reinterpret_cast<Context*>(glfwGetWindowUserPointer(window)) };
 		app->framebufferResized = true;
 	}
+
+	static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+	{
+		DJINN_UNUSED(key);
+		DJINN_UNUSED(scancode);
+		DJINN_UNUSED(action);
+		DJINN_UNUSED(mods);
+		auto app{ reinterpret_cast<Context*>(glfwGetWindowUserPointer(window)) };
+	}
 }
 
 #endif // CONTEXT_INCLUDE_H
