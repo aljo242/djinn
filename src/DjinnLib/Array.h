@@ -4,7 +4,7 @@
 #include <concepts>
 #include <cstring>
 #include <cassert>
-
+#include <algorithm>
 
 namespace Djinn
 {

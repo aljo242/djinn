@@ -126,7 +126,7 @@ To do it properly:
    It enables also internal definitions.
 
 \code
-#define VMA_IMPLEMENTATION
+s
 #include "vk_mem_alloc.h"
 \endcode
 

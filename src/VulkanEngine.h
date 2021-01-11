@@ -23,6 +23,7 @@
 #include "external/imgui/imgui.h"
 #include "external/imgui/backends/imgui_impl_vulkan.h"
 #include "external/imgui/backends/imgui_impl_glfw.h"
+#include "external/vk_mem_alloc.h"
 
 #include "DjinnLib/Array.h"
 #include "DjinnLib/Queue.h"
@@ -59,7 +60,6 @@ namespace Djinn
 		void recreateSwapChain();
 		void createRenderPass();
 		void createGraphicsPipeline();
-		void createCommandPool();
 		void createDepthResources();
 		void createTextureImage();
 		void createTextureImageView();
@@ -88,6 +88,7 @@ namespace Djinn
 		void createCommandBuffers();
 		void createSyncObjects();
 		void initImGui();
+		void initVMA();
 
 	private:
 
@@ -95,7 +96,7 @@ namespace Djinn
 		Djinn::SwapChain* p_swapChain{ nullptr };
 		Djinn::Queue mainDeletionQueue;
 		Djinn::Queue swapchainDeletionQueue;
-
+		VmaAllocator VMA;
 
 		ImGui_ImplVulkanH_Window g_MainWindowData;
 

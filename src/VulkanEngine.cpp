@@ -15,6 +15,9 @@
 #define TINYOBJLOADER_IMPLEMENTATION // define this in only *one* .cc
 #include <tiny_obj_loader.h>
 
+#define VMA_IMPLEMENTATION
+#include "external/vk_mem_alloc.h"
+
 
 Djinn::VulkanEngine::~VulkanEngine()
 {
@@ -44,6 +47,7 @@ void Djinn::VulkanEngine::initVulkan()
 	p_context->Init();
 	mainDeletionQueue.PushFunction([=]()
 		{	p_context->CleanUp(); });
+	initVMA();
 	const auto indices = p_context->queueFamilyIndices;
 	msaaSamples = p_context->renderConfig.msaaSamples;
 	p_swapChain = new SwapChain(p_context);
@@ -68,6 +72,17 @@ void Djinn::VulkanEngine::initVulkan()
 	createDescriptorSets();		//
 	createCommandBuffers();		//
 	createSyncObjects();		//
+}
+
+void Djinn::VulkanEngine::initVMA()
+{
+	VmaAllocatorCreateInfo allocatorInfo = {};
+	allocatorInfo.physicalDevice = p_context->gpuInfo.gpu;
+	allocatorInfo.device = p_context->gpuInfo.device;
+	allocatorInfo.instance = p_context->instance;
+	vmaCreateAllocator(&allocatorInfo, &VMA);
+	mainDeletionQueue.PushFunction([=]()
+		{vmaDestroyAllocator(VMA);});
 }
 
 void Djinn::VulkanEngine::CleanUp()

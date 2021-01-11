@@ -5,10 +5,23 @@
 #include "Context.h"
 #include "../DjinnLib/Types.h"
 #include "../DjinnLib/Array.h"
+#include "../external/vk_mem_alloc.h"
+
 #include <vector>
 
 namespace Djinn
 {
+	struct AllocatedBuffer
+	{
+		VkBuffer buffer;
+		VmaAllocation allocation;
+	};
+
+	struct AllocatedImage
+	{
+		VkImage image;
+		VmaAllocation allocation;
+	};
 
 
 	enum class MemoryUsage

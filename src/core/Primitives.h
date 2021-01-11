@@ -2,6 +2,8 @@
 #define PRIMITIVES_INCLUDE_H
 
 #include "../DjinnLib/Array.h"
+#include <vector>
+#include "Memory.h"
 
 
 struct Vertex
@@ -66,6 +68,12 @@ struct UniformBufferObject
 	alignas(16) glm::mat4 model;
 	alignas(16) glm::mat4 view;
 	alignas(16) glm::mat4 projection;
+};
+
+struct Mesh
+{
+	std::vector<Vertex> vertices;
+	Djinn::AllocatedBuffer vertexBuffer;
 };
 
 #endif // PRIMITIVES_INCLUDE_H
