@@ -98,8 +98,6 @@ list(APPEND EXTRA_LIBS
 	CONAN_PKG::glfw
 	CONAN_PKG::stb
 	CONAN_PKG::tinyobjloader
-	#CONAN_PKG::imgui
-	CONAN_PKG::sdl2
 	)
 
 include(cmake/ConanConfig.cmake)

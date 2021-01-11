@@ -130,6 +130,16 @@ VkPipelineRasterizationStateCreateInfo Djinn::GraphicsPipelineBuilder::initRaste
 	info.cullMode = VK_CULL_MODE_BACK_BIT;
 	info.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	// no depth bias
+	/*
+		Bias = (float)DepthBias * r + SlopeScaledDepthBias * MaxDepthSlope;
+		where r is the minimum representable value > 0 in the depth-buffer format converted to float32.
+
+		For a 24-bit depth buffer, r = 1 / 2^24.
+		Example: DepthBias = 100000 ==> Actual DepthBias = 100000/2^24 = .006
+
+		For a 16-bit depth buffer, r = 1 / 2^16.
+		Example: DepthBias = 100000 ==> Actual DepthBias = 100000/2^16 = 1.52
+	*/
 	info.depthBiasEnable = VK_FALSE;
 	info.depthBiasConstantFactor = 0.0f;
 	info.depthBiasClamp = 0.0f;
@@ -158,18 +168,18 @@ VkPipelineColorBlendAttachmentState Djinn::GraphicsPipelineBuilder::initColorBle
 {
 	VkPipelineColorBlendAttachmentState info{};
 	info.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
-						VK_COLOR_COMPONENT_G_BIT |
-						VK_COLOR_COMPONENT_B_BIT |
-						VK_COLOR_COMPONENT_A_BIT;
+						  VK_COLOR_COMPONENT_G_BIT |
+						  VK_COLOR_COMPONENT_B_BIT |
+						  VK_COLOR_COMPONENT_A_BIT;
 	
 	// alpha blending
-	colorBlendAttachment.blendEnable = VK_TRUE;
-	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;  // Optional
-	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; // Optional
-	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;		// Optional
-	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;  // Optional
-	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
-	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+	info.blendEnable = VK_TRUE;
+	info.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;  // Optional
+	info.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; // Optional
+	info.colorBlendOp = VK_BLEND_OP_ADD;		// Optional
+	info.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;  // Optional
+	info.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+	info.alphaBlendOp = VK_BLEND_OP_ADD;
 
 	return info;
 }
@@ -191,7 +201,6 @@ VkPipelineViewportStateCreateInfo Djinn::GraphicsPipelineBuilder::initViewPortSt
 VkPipelineColorBlendStateCreateInfo Djinn::GraphicsPipelineBuilder::initColorBlendingInfo()
 {
 	VkPipelineColorBlendStateCreateInfo info{};
-	info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	info.logicOpEnable = VK_FALSE;
 	info.logicOp = VK_LOGIC_OP_COPY;		// Optional

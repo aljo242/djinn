@@ -18,7 +18,6 @@ macro(run_conan)
 		spdlog/1.8.1
 		stb/20200203 
 		tinyobjloader/1.0.6
-		sdl2/2.0.12@bincrafters/stable
 		OPTIONS
 		${CONAN_EXTRA_OPTIONS}
 		BASIC_SETUP
