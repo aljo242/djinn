@@ -47,6 +47,8 @@ namespace Djinn
 		uint8_t fn = 0;
 		uint8_t tilde = 0;
 		uint8_t l_alt = 0;
+		uint8_t minus = 0;
+		uint8_t equal = 0;
 		uint8_t r_alt = 0;
 		uint8_t num_1 = 0;
 		uint8_t num_2 = 0;
