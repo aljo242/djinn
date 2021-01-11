@@ -98,18 +98,6 @@ Djinn::GamepadState* Djinn::VulkanEngine::GetGamepadState() const
 void Djinn::VulkanEngine::cleanupSwapChain()
 {
 	swapchainDeletionQueue.Flush();
-
-	//vkFreeCommandBuffers(p_context->gpuInfo.device, p_context->graphicsCommandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-	//vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline.pipeline, nullptr);
-	//vkDestroyPipelineLayout(p_context->gpuInfo.device, graphicsPipeline.pipelineLayout, nullptr);
-	//renderPass.CleanUp(p_context);
-
-	//colorImage.CleanUp(p_context);
-	//depthImage.CleanUp(p_context);
-
-	//vkDestroyDescriptorPool(p_context->gpuInfo.device, descriptorPool, nullptr);
-
-	//p_swapChain->CleanUp(p_context);
 }
 
 void Djinn::VulkanEngine::recreateSwapChain()
@@ -170,9 +158,8 @@ void Djinn::VulkanEngine::createGraphicsPipeline()
 	fragShader.DestroyModule();
 
 	swapchainDeletionQueue.PushFunction([=]()
-		{vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline.pipeline, nullptr); });
-	swapchainDeletionQueue.PushFunction([=]()
-		{vkDestroyPipelineLayout(p_context->gpuInfo.device, graphicsPipeline.pipelineLayout, nullptr); });
+		{vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline.pipeline, nullptr);
+		vkDestroyPipelineLayout(p_context->gpuInfo.device, graphicsPipeline.pipelineLayout, nullptr); });
 }
 
 
@@ -236,9 +223,8 @@ void Djinn::VulkanEngine::createTextureImage()
 
 	generateMipMaps(textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, m_mipLevels);
 	mainDeletionQueue.PushFunction([=]()
-		{vkDestroyImage(p_context->gpuInfo.device, textureImage, nullptr); });
-	mainDeletionQueue.PushFunction([=]()
-		{vkFreeMemory(p_context->gpuInfo.device, textureImageMemory, nullptr); });
+		{vkDestroyImage(p_context->gpuInfo.device, textureImage, nullptr);
+		vkFreeMemory(p_context->gpuInfo.device, textureImageMemory, nullptr); });
 }
 
 VkImageView Djinn::VulkanEngine::createImageView(const VkImage image, const VkFormat format, const VkImageAspectFlags aspectFlags, const uint32_t mipLevels)
@@ -957,11 +943,9 @@ void Djinn::VulkanEngine::createSyncObjects()
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 	{
 		mainDeletionQueue.PushFunction([=]()
-			{	vkDestroySemaphore(p_context->gpuInfo.device, renderFinishedSemaphores[i], nullptr);});
-		mainDeletionQueue.PushFunction([=]()
-			{	vkDestroySemaphore(p_context->gpuInfo.device, imageAvailableSemaphores[i], nullptr); });
-		mainDeletionQueue.PushFunction([=]()
-			{	vkDestroyFence(p_context->gpuInfo.device, inFlightFences[i], nullptr); });
+			{	vkDestroySemaphore(p_context->gpuInfo.device, renderFinishedSemaphores[i], nullptr);
+				vkDestroySemaphore(p_context->gpuInfo.device, imageAvailableSemaphores[i], nullptr);
+				vkDestroyFence(p_context->gpuInfo.device, inFlightFences[i], nullptr); });
 	}
 }
 

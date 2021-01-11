@@ -102,7 +102,6 @@ void Djinn::SwapChain::createSwapChainImages(Context* p_context)
 	vkGetSwapchainImagesKHR(p_context->gpuInfo.device, swapChain, &imageCount, nullptr);
 	swapChainImages.resize(imageCount);
 	vkGetSwapchainImagesKHR(p_context->gpuInfo.device, swapChain, &imageCount, swapChainImages.data());
-
 }
 
 void Djinn::SwapChain::createSwapChainImageViews(Context* p_context)
