@@ -25,6 +25,7 @@
 #include "external/imgui/backends/imgui_impl_glfw.h"
 
 #include "DjinnLib/Array.h"
+#include "DjinnLib/Queue.h"
 
 
 constexpr uint32_t MAX_FRAMES_IN_FLIGHT{ 2 };
@@ -41,7 +42,6 @@ namespace Djinn
 		VulkanEngine() = default;
 		~VulkanEngine();
 		void Init();
-		void Run();
 		bool WindowOpen();
 		void QueryWindowEvents();
 		void drawFrame();
@@ -49,7 +49,6 @@ namespace Djinn
 		Djinn::KeyboardState* GetKeyboardState() const;
 		Djinn::MouseState* GetMouseState() const;
 		Djinn::GamepadState* GetGamepadState() const;
-
 
 
 	private:
@@ -94,6 +93,9 @@ namespace Djinn
 
 		Djinn::Context* p_context{ nullptr };
 		Djinn::SwapChain* p_swapChain{ nullptr };
+		Djinn::Queue mainDeletionQueue;
+		Djinn::Queue swapchainDeletionQueue;
+
 
 		ImGui_ImplVulkanH_Window g_MainWindowData;
 

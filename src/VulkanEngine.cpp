@@ -45,8 +45,10 @@ void Djinn::VulkanEngine::initVulkan()
 	const auto indices = p_context->queueFamilyIndices;
 	msaaSamples = p_context->renderConfig.msaaSamples;
 	p_swapChain = new SwapChain(p_context);
-
+	swapchainDeletionQueue.PushFunction([=]()
+		{p_swapChain->CleanUp(p_context); });
 	createRenderPass();			//
+	createDescriptorPool();		//
 	createDescriptorSetLayout();//
 	createGraphicsPipeline();	//
 	createColorResources();     //
@@ -61,7 +63,6 @@ void Djinn::VulkanEngine::initVulkan()
 	createVertexBufferStaged();		//
 	createIndexBufferStaged();		//
 	createUniformBuffers();		//
-	createDescriptorPool();		//
 	createDescriptorSets();		//
 	createCommandBuffers();		//
 	createSyncObjects();		//
@@ -71,21 +72,23 @@ void Djinn::VulkanEngine::CleanUp()
 {
 	// wait for the device to not be "mid-work" before we destroy objects
 	vkDeviceWaitIdle(p_context->gpuInfo.device);
+	swapchainDeletionQueue.Flush();
+	mainDeletionQueue.Flush();
 
 	//cleanupSwapChain();
-	vkDestroyPipelineLayout(p_context->gpuInfo.device, graphicsPipeline.pipelineLayout, nullptr);
-	vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline.pipeline, nullptr);
-	renderPass.CleanUp(p_context);
+	//vkDestroyPipelineLayout(p_context->gpuInfo.device, graphicsPipeline.pipelineLayout, nullptr);
+	//vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline.pipeline, nullptr);
+	//renderPass.CleanUp(p_context);
 
 	for (auto& buffer : _uniformBuffers)
 	{
 		buffer.CleanUp(p_context);
 	}
 
-	colorImage.CleanUp(p_context);
-	depthImage.CleanUp(p_context);
+	//colorImage.CleanUp(p_context);
+	//depthImage.CleanUp(p_context);
 
-	vkDestroyDescriptorPool(p_context->gpuInfo.device, descriptorPool, nullptr);
+	//vkDestroyDescriptorPool(p_context->gpuInfo.device, descriptorPool, nullptr);
 
 	vkDestroySampler(p_context->gpuInfo.device, textureSampler, nullptr);
 	vkDestroyImageView(p_context->gpuInfo.device, textureImageView, nullptr);
@@ -99,7 +102,7 @@ void Djinn::VulkanEngine::CleanUp()
 	vkDestroyImage(p_context->gpuInfo.device, textureImage, nullptr);
 	vkFreeMemory(p_context->gpuInfo.device, textureImageMemory, nullptr);
 
-	p_swapChain->CleanUp(p_context);
+	//p_swapChain->CleanUp(p_context);
 
 
 	// destroy sync objects
@@ -109,8 +112,6 @@ void Djinn::VulkanEngine::CleanUp()
 		vkDestroySemaphore(p_context->gpuInfo.device, imageAvailableSemaphores[i], nullptr);
 		vkDestroyFence(p_context->gpuInfo.device, inFlightFences[i], nullptr);
 	}
-
-
 
 	p_context->CleanUp();
 }
@@ -134,18 +135,19 @@ Djinn::GamepadState* Djinn::VulkanEngine::GetGamepadState() const
 
 void Djinn::VulkanEngine::cleanupSwapChain()
 {
-	p_swapChain->CleanUp(p_context);
+	swapchainDeletionQueue.Flush();
 
-	vkFreeCommandBuffers(p_context->gpuInfo.device, p_context->graphicsCommandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-	vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline.pipeline, nullptr);
-	vkDestroyPipelineLayout(p_context->gpuInfo.device, graphicsPipeline.pipelineLayout, nullptr);
-	renderPass.CleanUp(p_context);
+	//vkFreeCommandBuffers(p_context->gpuInfo.device, p_context->graphicsCommandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+	//vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline.pipeline, nullptr);
+	//vkDestroyPipelineLayout(p_context->gpuInfo.device, graphicsPipeline.pipelineLayout, nullptr);
+	//renderPass.CleanUp(p_context);
 
-	colorImage.CleanUp(p_context);
-	depthImage.CleanUp(p_context);
+	//colorImage.CleanUp(p_context);
+	//depthImage.CleanUp(p_context);
 
-	vkDestroyDescriptorPool(p_context->gpuInfo.device, descriptorPool, nullptr);
+	//vkDestroyDescriptorPool(p_context->gpuInfo.device, descriptorPool, nullptr);
 
+	//p_swapChain->CleanUp(p_context);
 }
 
 void Djinn::VulkanEngine::recreateSwapChain()
@@ -159,10 +161,12 @@ void Djinn::VulkanEngine::recreateSwapChain()
 
 	// re-init
 	p_swapChain->Init(p_context);
+	swapchainDeletionQueue.PushFunction([=]()
+		{p_swapChain->CleanUp(p_context); });
 	createRenderPass();
 	createGraphicsPipeline();
-	createColorResources();
-	createDepthResources();
+	createColorResources();     //
+	createDepthResources();		//
 	p_swapChain->createFramebuffers(p_context, &colorImage, &depthImage, renderPass);
 	createDescriptorPool();		//
 	createDescriptorSets();		//
@@ -178,6 +182,8 @@ void Djinn::VulkanEngine::createRenderPass()
 	config.depthFormat = findDepthFormat(p_context);
 
 	renderPass.Init(p_context, config);
+	swapchainDeletionQueue.PushFunction([=]()
+		{renderPass.CleanUp(p_context); });
 }
 
 void Djinn::VulkanEngine::createGraphicsPipeline()
@@ -200,6 +206,11 @@ void Djinn::VulkanEngine::createGraphicsPipeline()
 	// cleanup
 	vertShader.DestroyModule();
 	fragShader.DestroyModule();
+
+	swapchainDeletionQueue.PushFunction([=]()
+		{vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline.pipeline, nullptr); });
+	swapchainDeletionQueue.PushFunction([=]()
+		{vkDestroyPipelineLayout(p_context->gpuInfo.device, graphicsPipeline.pipelineLayout, nullptr); });
 }
 
 
@@ -220,6 +231,8 @@ void Djinn::VulkanEngine::createDepthResources()
 	createInfo.numSamples = msaaSamples;
 
 	depthImage.Init(p_context, createInfo);
+	swapchainDeletionQueue.PushFunction([=]()
+		{depthImage.CleanUp(p_context); });
 }
 
 void Djinn::VulkanEngine::createTextureImage()
@@ -332,6 +345,8 @@ void Djinn::VulkanEngine::createColorResources()
 	createInfo.numSamples = msaaSamples;
 
 	colorImage.Init(p_context, createInfo);
+	swapchainDeletionQueue.PushFunction([=]()
+		{colorImage.CleanUp(p_context); });
 
 }
 
@@ -760,6 +775,8 @@ void Djinn::VulkanEngine::createDescriptorPool()
 
 	auto result{ (vkCreateDescriptorPool(p_context->gpuInfo.device, &poolCreateInfo, nullptr, &descriptorPool)) };
 	DJINN_VK_ASSERT(result);
+	swapchainDeletionQueue.PushFunction([=]()
+		{vkDestroyDescriptorPool(p_context->gpuInfo.device, descriptorPool, nullptr); });
 }
 
 
@@ -927,6 +944,9 @@ void Djinn::VulkanEngine::createCommandBuffers()
 		result = vkEndCommandBuffer(commandBuffers[i]);
 		DJINN_VK_ASSERT(result);
 	}
+
+	swapchainDeletionQueue.PushFunction([=]()
+		{vkFreeCommandBuffers(p_context->gpuInfo.device, p_context->graphicsCommandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data()); });
 }
 
 void Djinn::VulkanEngine::createSyncObjects()
