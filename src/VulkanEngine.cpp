@@ -42,11 +42,13 @@ void Djinn::VulkanEngine::initVulkan()
 {
 	p_context = new Context();
 	p_context->Init();
+	mainDeletionQueue.PushFunction([=]()
+		{	p_context->CleanUp(); });
 	const auto indices = p_context->queueFamilyIndices;
 	msaaSamples = p_context->renderConfig.msaaSamples;
 	p_swapChain = new SwapChain(p_context);
 	swapchainDeletionQueue.PushFunction([=]()
-		{p_swapChain->CleanUp(p_context); });
+		{	p_swapChain->CleanUp(p_context); });
 	createRenderPass();			//
 	createDescriptorPool();		//
 	createDescriptorSetLayout();//
@@ -74,46 +76,6 @@ void Djinn::VulkanEngine::CleanUp()
 	vkDeviceWaitIdle(p_context->gpuInfo.device);
 	swapchainDeletionQueue.Flush();
 	mainDeletionQueue.Flush();
-
-	//cleanupSwapChain();
-	//vkDestroyPipelineLayout(p_context->gpuInfo.device, graphicsPipeline.pipelineLayout, nullptr);
-	//vkDestroyPipeline(p_context->gpuInfo.device, graphicsPipeline.pipeline, nullptr);
-	//renderPass.CleanUp(p_context);
-
-	for (auto& buffer : _uniformBuffers)
-	{
-		buffer.CleanUp(p_context);
-	}
-
-	//colorImage.CleanUp(p_context);
-	//depthImage.CleanUp(p_context);
-
-	//vkDestroyDescriptorPool(p_context->gpuInfo.device, descriptorPool, nullptr);
-
-	vkDestroySampler(p_context->gpuInfo.device, textureSampler, nullptr);
-	vkDestroyImageView(p_context->gpuInfo.device, textureImageView, nullptr);
-
-	vkDestroyDescriptorSetLayout(p_context->gpuInfo.device, descriptorSetLayout, nullptr);
-
-
-	_vertexBuffer.CleanUp(p_context);
-	_indexBuffer.CleanUp(p_context);
-
-	vkDestroyImage(p_context->gpuInfo.device, textureImage, nullptr);
-	vkFreeMemory(p_context->gpuInfo.device, textureImageMemory, nullptr);
-
-	//p_swapChain->CleanUp(p_context);
-
-
-	// destroy sync objects
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-	{
-		vkDestroySemaphore(p_context->gpuInfo.device, renderFinishedSemaphores[i], nullptr);
-		vkDestroySemaphore(p_context->gpuInfo.device, imageAvailableSemaphores[i], nullptr);
-		vkDestroyFence(p_context->gpuInfo.device, inFlightFences[i], nullptr);
-	}
-
-	p_context->CleanUp();
 }
 
 
@@ -273,7 +235,10 @@ void Djinn::VulkanEngine::createTextureImage()
 	vkFreeMemory(p_context->gpuInfo.device, stagingBufferMemory, nullptr);
 
 	generateMipMaps(textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, m_mipLevels);
-
+	mainDeletionQueue.PushFunction([=]()
+		{vkDestroyImage(p_context->gpuInfo.device, textureImage, nullptr); });
+	mainDeletionQueue.PushFunction([=]()
+		{vkFreeMemory(p_context->gpuInfo.device, textureImageMemory, nullptr); });
 }
 
 VkImageView Djinn::VulkanEngine::createImageView(const VkImage image, const VkFormat format, const VkImageAspectFlags aspectFlags, const uint32_t mipLevels)
@@ -300,6 +265,8 @@ VkImageView Djinn::VulkanEngine::createImageView(const VkImage image, const VkFo
 void Djinn::VulkanEngine::createTextureImageView()
 {
 	textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, m_mipLevels);
+	mainDeletionQueue.PushFunction([=]()
+		{	vkDestroyImageView(p_context->gpuInfo.device, textureImageView, nullptr); });
 }
 
 
@@ -325,6 +292,10 @@ void Djinn::VulkanEngine::createTextureSampler()
 
 	auto result{ vkCreateSampler(p_context->gpuInfo.device, &samplerCreateInfo, nullptr, &textureSampler) };
 	DJINN_VK_ASSERT(result);
+
+	mainDeletionQueue.PushFunction([=]()
+		{vkDestroySampler(p_context->gpuInfo.device, textureSampler, nullptr); });
+
 }
 
 
@@ -676,6 +647,10 @@ void Djinn::VulkanEngine::createDescriptorSetLayout()
 
 	auto result{ (vkCreateDescriptorSetLayout(p_context->gpuInfo.device, &layoutCreateInfo, nullptr, &descriptorSetLayout)) };
 	DJINN_VK_ASSERT(result);
+
+	mainDeletionQueue.PushFunction([=]()
+		{vkDestroyDescriptorSetLayout(p_context->gpuInfo.device, descriptorSetLayout, nullptr); });
+
 }
 
 
@@ -705,6 +680,8 @@ void Djinn::VulkanEngine::createVertexBufferStaged()
 
 	_stagingBuffer.CleanUp(p_context);
 
+	mainDeletionQueue.PushFunction([=]()
+		{_vertexBuffer.CleanUp(p_context);});
 }
 
 
@@ -735,6 +712,8 @@ void Djinn::VulkanEngine::createIndexBufferStaged()
 
 	_stagingBuffer.CleanUp(p_context);
 
+	mainDeletionQueue.PushFunction([=]()
+		{_indexBuffer.CleanUp(p_context); });
 }
 
 void Djinn::VulkanEngine::createUniformBuffers()
@@ -756,6 +735,12 @@ void Djinn::VulkanEngine::createUniformBuffers()
 	for (auto& buffer : _uniformBuffers)
 	{
 		buffer.Init(p_context, bufferCreateInfo);
+	}
+
+	for (auto& buffer : _uniformBuffers)
+	{
+		mainDeletionQueue.PushFunction([&]()
+			{buffer.CleanUp(p_context); });
 	}
 }
 
@@ -966,6 +951,17 @@ void Djinn::VulkanEngine::createSyncObjects()
 			vkCreateSemaphore(p_context->gpuInfo.device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) == VK_SUCCESS &&
 			vkCreateFence(p_context->gpuInfo.device, &fenceInfo, nullptr, &inFlightFences[i]) == VK_SUCCESS);
 		assert(result);
+	}
+
+	// destroy sync objects
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+	{
+		mainDeletionQueue.PushFunction([=]()
+			{	vkDestroySemaphore(p_context->gpuInfo.device, renderFinishedSemaphores[i], nullptr);});
+		mainDeletionQueue.PushFunction([=]()
+			{	vkDestroySemaphore(p_context->gpuInfo.device, imageAvailableSemaphores[i], nullptr); });
+		mainDeletionQueue.PushFunction([=]()
+			{	vkDestroyFence(p_context->gpuInfo.device, inFlightFences[i], nullptr); });
 	}
 }
 
