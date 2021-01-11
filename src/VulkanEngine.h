@@ -46,6 +46,9 @@ namespace Djinn
 		void QueryWindowEvents();
 		void drawFrame();
 		void CleanUp();
+		Djinn::KeyboardState* GetKeyboardState() const;
+		Djinn::MouseState* GetMouseState() const;
+		Djinn::GamepadState* GetGamepadState() const;
 
 
 

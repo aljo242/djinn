@@ -117,6 +117,21 @@ void Djinn::VulkanEngine::CleanUp()
 
 
 
+Djinn::KeyboardState* Djinn::VulkanEngine::GetKeyboardState() const
+{
+	return &p_context->keyboardState;
+}
+
+Djinn::MouseState* Djinn::VulkanEngine::GetMouseState() const
+{
+	return &p_context->mouseState;
+}
+
+Djinn::GamepadState* Djinn::VulkanEngine::GetGamepadState() const
+{
+	return &p_context->gamepadState;
+}
+
 void Djinn::VulkanEngine::cleanupSwapChain()
 {
 	p_swapChain->CleanUp(p_context);

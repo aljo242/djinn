@@ -9,7 +9,13 @@ void Djinn::App::Init()
 
 void Djinn::App::doInput()
 {
+	const auto keyState = engine.GetKeyboardState();
+	const auto mouseState = engine.GetMouseState();
 
+	if (keyState->e == DJINN_KEY_DOWN)
+	{
+		spdlog::error("E");
+	}
 }
 
 void Djinn::App::Run()

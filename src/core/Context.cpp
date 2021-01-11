@@ -22,7 +22,12 @@ void Djinn::Context::Init()
 	// window now will point to class, so it can access private members
 	glfwSetWindowUserPointer(window, this);
 	glfwSetFramebufferSizeCallback(window, framebufferResizedCallback);
-	glfwSetKeyCallback(window, key_callback);
+	glfwSetKeyCallback(window, keyCallback);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	glfwSetCursorPosCallback(window, cursorPositionCallback);
+
+
+
 
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
