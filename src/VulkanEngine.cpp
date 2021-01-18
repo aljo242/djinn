@@ -610,6 +610,7 @@ void Djinn::VulkanEngine::loadModel(const std::string& path)
 			};
 
 			vertex.color = { 1.0f, 1.0f, 1.0f };
+			vertex.normal = { 1.0f, 1.0f, 1.0f };
 
 			if (uniqueVertices.count(vertex) == 0)
 			{
@@ -867,9 +868,9 @@ void Djinn::VulkanEngine::createBuffer(const VkDeviceSize size, VkBufferUsageFla
 	result = vkAllocateMemory(p_context->gpuInfo.device, &allocInfo, nullptr, &bufferMemory);
 	DJINN_VK_ASSERT(result);
 
-	vkBindBufferMemory(p_context->gpuInfo.device, buffer, bufferMemory, offset);
+	result = vkBindBufferMemory(p_context->gpuInfo.device, buffer, bufferMemory, offset);
+	DJINN_VK_ASSERT(result);
 }
-
 
 void Djinn::VulkanEngine::createCommandBuffers()
 {
@@ -944,7 +945,8 @@ void Djinn::VulkanEngine::createSyncObjects()
 
 	VkFenceCreateInfo fenceInfo{};
 	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // intial value is SIGNALED
+	// on first frame, vkWaitForFences will be skipped since it is SIGNALED already
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
 	{

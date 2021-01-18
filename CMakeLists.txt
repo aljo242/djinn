@@ -56,12 +56,6 @@ else()
 
 endif()
 
-if(OpenMP_CXX_FOUND) 
-	MESSAGE("Found OpenMP.")
-else()
-	MESSAGE("Could not find OpenMP.  Verify that it is installed.")
-	return()
-endif()
 
 #################################################################################################################################
 # options
@@ -91,7 +85,6 @@ set(CONAN_EXTRA_OPTIONS "")
 list(APPEND EXTRA_LIBS 
 	project_options 
 	project_warnings
-	OpenMP::OpenMP_CXX
 	Vulkan::Vulkan
 	CONAN_PKG::spdlog
 	CONAN_PKG::glm
